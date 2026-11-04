@@ -1,0 +1,8 @@
+# Local design notes from the impeccable tool: keep local, do not commit
+notes/
+
+# OS and editor files
+.DS_Store
+*.swp
+__pycache__/
+node_modules/
