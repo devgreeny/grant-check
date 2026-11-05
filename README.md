@@ -11,6 +11,7 @@ Basecamp prototype for the U.S.VETS accounts payable discovery. A site budget an
 | `src/template.html` | Page markup, styles and UI code |
 | `src/logic.js` | Fake data, rule checks, prompts, page tools, practice generator, eval checks |
 | `data/regs.json` | Official regulation text pulled from the eCFR API |
+| `assets/brand/` | U.S.VETS icons and arrow/quote artwork from the brand toolkit's graphic elements pack; `build.py` inlines them into the page |
 | `dist/grant-check.html` | Built single-file page (what gets published) |
 | `dist/grant-check-consistency.html` | Repeat-run test: same invoice N times, counts distinct answers and finance questions |
 | `tools/build.py` | Builds `dist/` from `src/` and `data/` |
