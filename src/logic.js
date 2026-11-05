@@ -11,7 +11,8 @@ const FAKE_DOCS = {
       "P5. Costs of managing the program, such as accounting, audit, human resources, executive oversight and general office costs, are Admin. Staff time, supplies and payments that directly serve participants are Program.",
       "P6. If a limit depends on participant history or a document that is not in the invoice packet, such as months of assistance used, prior deposits, other subsidies, income level or a rent reasonableness note, mark the invoice Needs info and do not guess.",
       "P7. If the governing documents do not settle the question, mark the invoice Escalate and write the question for the Grants Accountant.",
-      "P8. Every invoice needs a vendor invoice, an approval signature and service dates. Participant assistance must be paid to the third party owed, never to the participant."
+      "P8. Every invoice needs a vendor invoice, an approval signature and service dates. Participant assistance must be paid to the third party owed, never to the participant.",
+      "P9. Gift cards, prepaid cards and other cash equivalents are treated as cash. A grant may be charged for them only after the Grants Accountant approves the purchase, and the site must keep a log of each card issued. Mark these invoices Escalate, even when a fund's rules allow the cost."
     ]}]
   },
   "CHF": {
@@ -132,7 +133,7 @@ const INVOICES = [
     expected: { status: ["needs_info"], fund: ["SSVF-V"], cite: ["62.34(a)(4)", "P6", "200.403(g)"] }, why: "No rent reasonableness note in the packet." },
   { id: "INV-14", site: "Valley", vendor: "Valley Grocers", payee: "Valley Grocers", payeeType: "Vendor", amount: 250, date: "2026-11-01", period: "2026-11", kind: "gift", client: null, description: "Ten $25 grocery gift cards for participant holiday event", backup: [...STD],
     analyst: { fund: "RIDGE", category: "Client-Flex", cost_type: "Program", service_period: "2026-11" },
-    expected: { status: ["not_allowed", "escalate"], fund: [null], cite: ["R3", "R1", "578.53(d)"] }, why: "Ridgeline bars gift cards; no other fund lists them." },
+    expected: { status: ["escalate"], fund: ["COC-SSO-V"], cite: ["P9", "578.53(e)(7)", "578.53"] }, why: "Ridgeline bars gift cards (R3). HUD CoC allows groceries (578.53(e)(7)), but FIN-07 P9 treats gift cards as cash and needs Grants Accountant approval." },
   { id: "INV-15", site: "Valley", vendor: "Valley Water & Power", payee: "Participant C-109", payeeType: "Participant", amount: 210, date: "2026-11-02", period: "2026-10", kind: "utility", client: "C-109", description: "Reimburse veteran for October utility bill they paid", backup: [...STD],
     analyst: { fund: "SSVF-V", category: "TFA-Utility", cost_type: "Program", service_period: "2026-10" },
     expected: { status: ["not_allowed"], fund: [null, "SSVF-V"], cite: ["62.34(b)(2)", "P8"] }, why: "SSVF utility payments must go directly to the utility company." }
@@ -244,6 +245,7 @@ Rules for your answer:
 - Follow policy FIN-07 for which document controls and which fund to charge first.
 - Trust the COMPUTED CHECKS. They come from code, not from you.
 - status must be one of: "allowed" (a fund at this site can pay it, as entered or as you suggest), "not_allowed" (no fund at this site can pay it as submitted), "needs_info" (a needed fact or document is missing), "escalate" (the documents conflict or do not cover it, so finance must decide).
+- Pick status by this rule, the same way every time: if a quoted rule explicitly bars this cost and no other fund at this site can pay it, status is "not_allowed". If a fund's rules allow the cost but FIN-07 requires approval first, status is "escalate" with ask type needs_approval, and suggested.fund is the fund that would pay once approved. Otherwise use "escalate" only when the documents conflict or none of them address the cost. Use "needs_info" only when a specific document or fact is missing.
 - Every quote must be copied word for word from the document text below, 8 to 40 words, no ellipses.
 - Write for a site analyst: plain words, short sentences.
 
@@ -265,9 +267,17 @@ DOCUMENTS:
 ${docs}
 
 Reply with only one JSON object in this shape:
-{"status":"allowed","suggested":{"fund":"SSVF-H","category":"TFA-Rent","cost_type":"Program","service_period":"2026-11"},"summary":"One sentence, under 20 words.","missed":["SSVF has already paid 6 of its 6 rent months for this veteran."],"deciding":{"doc":"38CFR62","section":"38 CFR 62.34(a)(1)","quote":"exact words from the document"},"precedence":"One sentence: which document controls here and why, citing FIN-07.","supporting":[{"doc":"FIN-07","section":"FIN-07 P4","quote":"exact words"}],"flags":[{"field":"fund","entered":"","suggested":"SSVF-H","why":"short reason"}],"funds":[{"fund":"SSVF-H","verdict":"pays","why":"Under the 9-month limit."},{"fund":"CHF-H","verdict":"not_needed","why":"Federal fund pays first (FIN-07 P4)."}],"question":"","explain":"Two or three sentences for someone new to grants: what the deciding rule means in everyday words and how it led to this answer."}
+{"status":"allowed","suggested":{"fund":"SSVF-H","category":"TFA-Rent","cost_type":"Program","service_period":"2026-11"},"summary":"One sentence, under 20 words.","missed":["SSVF has already paid 6 of its 6 rent months for this veteran."],"deciding":{"doc":"38CFR62","section":"38 CFR 62.34(a)(1)","quote":"exact words from the document"},"precedence":"One sentence: which document controls here and why, citing FIN-07.","supporting":[{"doc":"FIN-07","section":"FIN-07 P4","quote":"exact words"}],"flags":[{"field":"fund","entered":"","suggested":"SSVF-H","why":"short reason"}],"funds":[{"fund":"SSVF-H","verdict":"pays","why":"Under the 9-month limit."},{"fund":"CHF-H","verdict":"not_needed","why":"Federal fund pays first (FIN-07 P4)."}],"ask":null,"explain":"Two or three sentences for someone new to grants: what the deciding rule means in everyday words and how it led to this answer."}
 funds lists every fund at this site, in the order given under FUNDS AT THIS SITE, with verdict "pays" (the one fund you suggest), "cannot" (its documents bar this cost or a limit is reached), "not_needed" (could pay, but FIN-07 says another fund goes first), or "unclear" (its documents do not settle it). Each why is under 12 words, plain language.
-Use null for suggested.fund and suggested.category when no fund can pay. cost_type is "Program" or "Admin". Give at most 2 supporting quotes. Put a flag only on fields the analyst left blank or got wrong. missed lists up to 3 facts the analyst likely did not see or got wrong, each under 15 words, plain words, no section numbers or fund codes; [] if nothing was missed. question is the specific question for finance or the case manager when status is needs_info or escalate, otherwise "".`;
+Use null for suggested.fund and suggested.category when no fund can pay. cost_type is "Program" or "Admin". Give at most 2 supporting quotes. Put a flag only on fields the analyst left blank or got wrong. missed lists up to 3 facts the analyst likely did not see or got wrong, each under 15 words, plain words, no section numbers or fund codes; [] if nothing was missed. ask is null when status is "allowed". Otherwise ask is the question for finance, built from one fixed type; the page writes the sentence, so fill only the fields listed:
+- {"type":"missing_document","item":one of ${JSON.stringify([...STD, ...RENT_DOCS])},"fund":fund code,"doc":doc id,"quote":"exact words that require it"} with status "needs_info"
+- {"type":"missing_fact","fact":one of ${JSON.stringify(ASK_FACTS)},"fund":fund code,"doc":doc id,"quote":"exact words that depend on it"} with status "needs_info"
+- {"type":"no_fund_can_pay","doc":doc id,"quote":"exact words that bar this cost"} with status "not_allowed"
+- {"type":"needs_approval","fund":fund code that would pay,"doc":doc id,"quote":"exact words of the rule that would allow it","doc_b":"FIN-07","quote_b":"exact words of the policy that requires approval"} with status "escalate"
+- {"type":"rules_conflict","doc":doc id,"quote":"exact words that seem to allow it","doc_b":doc id,"quote_b":"exact words that seem to bar it"} with status "escalate"
+- {"type":"rules_silent","fund":fund code,"doc":doc id,"quote":"exact words of the closest rule"} with status "escalate"
+- {"type":"other","doc":doc id,"quote":"exact words of the rule you think applies","text":"one plain question, under 30 words"} only if no type above fits
+Every ask names the document you think governs and quotes it word for word, so finance can confirm it.`;
 }
 
 const norm = s => String(s || "").toLowerCase().replace(/[‘’“”"']/g, "").replace(/[^a-z0-9$%]+/g, " ").trim();
@@ -279,6 +289,39 @@ function verifyQuote(q, DOCS) {
   return parts.length > 0 && parts.every(p => hay.includes(p));
 }
 
+const ASK_FACTS = ["income level", "months of SSVF help already paid", "other housing subsidies", "household size", "service period", "unit rent"];
+const ASK_LABEL = { missing_document: "Missing document", missing_fact: "Missing fact", no_fund_can_pay: "No fund can pay", needs_approval: "Needs approval", rules_conflict: "Rules conflict", rules_silent: "Rules don't say", other: "Not a standard question" };
+const FAKE_SHORT = { "FIN-07": "Finance policy FIN-07", "CHF": "County agreement", "RIDGE": "Ridgeline letter" };
+// A stable name for the rule a quote comes from: eCFR section number, or the paragraph label in our own documents
+function citeLabel(doc, quote, DOCS) {
+  const loc = locateQuote({ doc, quote }, DOCS);
+  if (!loc) return null;
+  const sec = DOCS[doc].sections[loc.section];
+  if (sec.key && ECFR_TITLE[doc]) return `${ECFR_TITLE[doc]} CFR ${sec.key}`;
+  const m = loc.para >= 0 ? sec.paras[loc.para].match(/^([A-Z]+\d+)\./) : null;
+  return `${FAKE_SHORT[doc] || DOCS[doc].title}${m ? " " + m[1] : ""}`;
+}
+// Build the question for finance from the fixed templates. Same type and fields always give the same words.
+function renderAsk(ask, inv, DOCS) {
+  if (!ask || typeof ask !== "object" || !ASK_LABEL[ask.type]) return null;
+  const fund = ask.fund && FUNDS[ask.fund] ? fundShort(ask.fund) : "this fund";
+  const cite = citeLabel(ask.doc, ask.quote, DOCS);
+  const found = !!cite && verifyQuote({ doc: ask.doc, quote: ask.quote }, DOCS);
+  const c = cite || "the rule quoted below";
+  const cost = `${inv.vendor}, ${money(inv.amount)} (${inv.id})`;
+  const confirm = ` We think ${c} governs this. Please confirm.`;
+  let text;
+  switch (ask.type) {
+    case "missing_document": text = `The packet for ${cost} is missing the ${String(ask.item || "required backup").toLowerCase()}. ${fund} can't be charged without it.${confirm}`; break;
+    case "missing_fact": text = `We need the veteran's ${ASK_FACTS.includes(ask.fact) ? ask.fact : "missing detail"} to decide whether ${fund} can pay ${cost}.${confirm}`; break;
+    case "no_fund_can_pay": text = `No grant at the ${inv.site} site can pay ${cost}.${confirm} Then decide: pay it from unrestricted funds, or return it to the vendor?`; break;
+    case "needs_approval": { const cb = citeLabel(ask.doc_b, ask.quote_b, DOCS) || "finance policy"; text = `${fund} can pay ${cost} under ${c}, but ${cb} requires Grants Accountant approval first. Please confirm ${c} applies, and approve or decline.`; break; }
+    case "rules_conflict": { const cb = citeLabel(ask.doc_b, ask.quote_b, DOCS) || "another rule"; text = `${c} seems to allow ${cost}, but ${cb} seems to bar it, and FIN-07 doesn't say which wins. Please confirm which one governs.`; break; }
+    case "rules_silent": text = `The documents don't clearly say whether ${fund} can pay ${cost}. We think ${c} is the closest rule. Please confirm whether it applies.`; break;
+    default: text = `${String(ask.text || "").slice(0, 240)}${confirm}`;
+  }
+  return { type: ask.type, label: ASK_LABEL[ask.type], standard: ask.type !== "other", text, doc: ask.doc, quote: ask.quote, cite, found, doc_b: ask.doc_b, quote_b: ask.quote_b };
+}
 const ECFR_TITLE = { "2CFR200": 2, "38CFR62": 38, "24CFR578": 24 };
 function locateQuote(q, DOCS) {
   const doc = q && DOCS[q.doc];
@@ -446,6 +489,7 @@ Rules for your answer:
 - Follow policy FIN-07 for which document controls and which fund to charge first.
 - Trust the numbers from check_limits over your own arithmetic.
 - status must be one of: "allowed" (a fund at this site can pay it, as entered or as you suggest), "not_allowed" (no fund at this site can pay it as submitted), "needs_info" (a needed fact or document is missing), "escalate" (the documents conflict or do not cover it, so finance must decide).
+- Pick status by this rule, the same way every time: if a quoted rule explicitly bars this cost and no other fund at this site can pay it, status is "not_allowed". If a fund's rules allow the cost but FIN-07 requires approval first, status is "escalate" with ask type needs_approval, and suggested.fund is the fund that would pay once approved. Otherwise use "escalate" only when the documents conflict or none of them address the cost. Use "needs_info" only when a specific document or fact is missing.
 - Every quote must be copied word for word, 8 to 40 words, no ellipses.
 - Write for a site analyst who is not technical: plain words, short sentences.
 
@@ -632,7 +676,7 @@ function generatePractice(seed, n) {
 
 
 // ---------- Eval framework ----------
-const PROMPT_VERSION = "v9 (demo: skip funds by budget line, short trace)";
+const PROMPT_VERSION = "v11 (demo: FIN-07 P9 gift cards need approval)";
 
 // Code checks: graded by code, never by Claude. critical = a miss sinks the whole case.
 const CODE_CHECKS = [
@@ -689,4 +733,4 @@ const DIAG_BUCKETS = [
   ["model", "All of the above were fine; the model got it wrong"]
 ];
 
-if (typeof module !== "undefined") module.exports = { locateQuote, veteranHistory, DOC_SOURCE, codeChecks, buildJudgePrompt, CODE_CHECKS, JUDGE_CHECKS, generatePractice, PRACTICE_TEMPLATES, makeTools, buildToolPrompt, oneShotSteps, INVOICES, computeChecks, buildPrompt, allDocs, verifyQuote, scoreResult, windowCount };
+if (typeof module !== "undefined") module.exports = { renderAsk, citeLabel, ASK_FACTS, locateQuote, veteranHistory, DOC_SOURCE, codeChecks, buildJudgePrompt, CODE_CHECKS, JUDGE_CHECKS, generatePractice, PRACTICE_TEMPLATES, makeTools, buildToolPrompt, oneShotSteps, INVOICES, computeChecks, buildPrompt, allDocs, verifyQuote, scoreResult, windowCount };

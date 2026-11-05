@@ -1,4 +1,4 @@
-# Grant Coding Check: eval plan
+# Grant Check: eval plan
 
 Basecamp prototype, U.S.VETS AP. Fake data only. Updated November 4, 2026.
 
