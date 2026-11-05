@@ -1,249 +1,187 @@
+<meta charset="utf-8">
 <title>Grant Coding Check</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Roboto:wght@400;500;700&display=swap">
 <style>
-/* Layout: one invoice at a time. Navy shell header, a stepper, then one work column: invoice, check, answer, who pays, coding, actions. Reviewer tools live in a separate view. */
+/* Demo: one invoice, one button, the trace, the answer. Full version (evals, reviewer tools) is in archive/. */
 :root {
   --ground: #EEF1F5; --paper: #FFFFFF; --panel: #F5F7FA; --ink: #1B2430; --soft: #5A6573; --rule: #D6DCE4;
   --navy: #003366; --navy-deep: #1C3664; --on-navy: #FFFFFF; --on-navy-soft: #B9C8DC;
-  --blue: #0074A6; --blue-ink: #FFFFFF; --blue-tint: #E3F1F8;
+  --blue: #0074A6; --blue-tint: #E3F1F8;
+  --c-rule: #0074A6; --c-rule-t: #E3F1F8; --c-vet: #6B3FA0; --c-vet-t: #EFE8F7; --c-check: #4A5868; --c-check-t: #E9EDF2; --c-claude: #1C3664; --c-claude-t: #E1E8F3; --c-pivot: #8A5D00; --c-pivot-t: #FBF0D5;
   --gold: #E9B732; --gold-tint: #FDF4DA; --gold-ink: #5C4300;
   --ok: #1D6B3E; --ok-tint: #E3F2E8; --no: #B42318; --no-tint: #FBE7E4; --info: #8A5D00; --info-tint: #FBF0D5; --ask: #1C3664; --ask-tint: #E1E8F3;
-  --focus: #003366;
-  --head: "Oswald", "Arial Narrow", "Roboto Condensed", sans-serif; --body: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --head: "Oswald", "Arial Narrow", sans-serif; --body: "Roboto", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
 }
-
-:root { color-scheme: light }
 * { box-sizing: border-box }
 [hidden] { display: none !important }
-html { -webkit-text-size-adjust: 100% }
-body { background: var(--ground); color: var(--ink); font: 16px/1.55 var(--body); }
-body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--navy) }
-::selection { background: var(--gold); color: #1B2430 }
-:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px }
-.shell :focus-visible { outline-color: var(--gold) }
-.num { font-variant-numeric: tabular-nums }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.55 var(--body) }
+:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px }
 .gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.num { font-variant-numeric: tabular-nums }
 
-/* Shell */
 .shell { background: var(--navy); color: var(--on-navy); border-bottom: 4px solid var(--gold) }
-.shell .in { max-width: 860px; margin: 0 auto; padding-block: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px }
+.shell .in { max-width: 1240px; margin: 0 auto; padding-block: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px }
 .brand { font: 600 20px/1.2 var(--head); text-transform: uppercase; letter-spacing: .14em; margin: 0 }
-.shell .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; color: var(--on-navy-soft) }
-.fake { background: var(--gold); color: #2A2000; font: 600 12px/1 var(--body); letter-spacing: .04em; text-transform: uppercase; border-radius: 3px; padding: 5px 8px }
-.linkbtn { background: none; border: 0; color: var(--on-navy); font: 500 14px var(--body); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 4px 0 }
+.meta { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--on-navy-soft) }
+.fake { background: var(--gold); color: #2A2000; font: 700 12px/1 var(--body); letter-spacing: .04em; text-transform: uppercase; border-radius: 3px; padding: 5px 8px }
 
-main { max-width: 860px; margin: 0 auto; padding-block: 20px 56px; display: flex; flex-direction: column; gap: 16px }
+main { max-width: 1240px; margin: 0 auto; padding-block: 24px 48px; display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 20px; align-items: start }
+@media (max-width: 900px) { main { grid-template-columns: 1fr } }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0 }
 
-/* Stepper */
-.stepper { display: flex; flex-wrap: wrap; align-items: center; gap: 10px }
-.stepper .pos { font-size: 14px; color: var(--soft); margin-right: auto }
-.stepper .pos b { color: var(--ink) }
-select { font: 500 15px var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 9px 10px; max-width: 100% }
-main > * { min-width: 0 }
-.stepper select { flex: 0 1 340px; min-width: 0; text-overflow: ellipsis }
-@media (max-width: 560px) {
-  .stepper .pos { flex-basis: 100% }
-  .stepper select { flex: 1 1 0 }
-  .coding tbody th { width: auto }
-  .coding th, .coding td { padding: 10px 6px }
-  .card { padding: 16px }
-  .verdict .what { font-size: 19px }
-}
+/* Queue: the invoices waiting for coding, like the list the sites use today */
+.queue-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px }
+.queue-head h2 { margin: 0 }
+.qcount { font-size: 13px; color: var(--soft) }
+.qlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px }
+.qrow { border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; background: var(--paper); cursor: grab; display: flex; flex-direction: column; gap: 4px; transition: border-color .15s ease-out, box-shadow .15s ease-out; user-select: none }
+.qrow:hover { border-color: var(--blue); box-shadow: 0 2px 8px rgba(0,51,102,.08) }
+.qrow:active { cursor: grabbing }
+.qrow.dragging { opacity: .5 }
+.qrow.current { border-color: var(--blue); box-shadow: inset 4px 0 0 var(--blue) }
+.qrow.locked { cursor: default; opacity: .6 }
+.qtop { display: flex; justify-content: space-between; gap: 10px; font-weight: 700 }
+.qdesc { font-size: 14px; color: var(--soft) }
+.qmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--soft); margin-top: 4px }
+.chip { font-size: 12px; font-weight: 500; border-radius: 999px; padding: 2px 9px; background: var(--info-tint); color: var(--info) }
+.chip.c-allowed { background: var(--ok-tint); color: var(--ok) } .chip.c-not_allowed { background: var(--no-tint); color: var(--no) }
+.chip.c-needs_info { background: var(--info-tint); color: var(--info) } .chip.c-escalate { background: var(--ask-tint); color: var(--ask) }
+.chip.c-run { background: var(--blue-tint); color: #00577D }
+.qhint { font-size: 13px; color: var(--soft); margin: 12px 0 0 }
 
-/* Buttons */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 500 16px var(--body); border-radius: 6px; padding: 11px 18px; cursor: pointer; border: 1px solid transparent; transition: background-color .15s ease-out, border-color .15s ease-out }
-.btn.primary { background: var(--blue); color: var(--blue-ink) }
-.btn.primary:hover { background: color-mix(in srgb, var(--blue) 86%, #000) }
-.btn.secondary { background: var(--paper); color: var(--ink); border-color: var(--rule) }
-.btn.secondary:hover { border-color: var(--soft) }
-.btn.small { font-size: 14px; padding: 7px 12px }
-.btn:disabled { opacity: .45; cursor: not-allowed }
-.btn svg { width: 18px; height: 18px }
+/* Drop zone: the check panel before an invoice is loaded */
+.drop { border: 2px dashed var(--rule); border-radius: 8px; background: var(--paper); min-height: 320px; display: grid; place-items: center; text-align: center; padding: 32px; color: var(--soft); transition: border-color .15s ease-out, background-color .15s ease-out }
+.drop b { display: block; font-size: 20px; color: var(--navy-deep); margin-bottom: 6px }
+.drop svg { width: 40px; height: 40px; color: var(--blue); margin-bottom: 10px }
+.tool.over .drop, .tool.over > .card:first-child { border-color: var(--blue); background: var(--blue-tint) }
+.tool.over > .card:first-child { border-style: dashed }
+.card { background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 22px }
+h2 { font: 500 17px/1.2 var(--head); text-transform: uppercase; letter-spacing: .1em; color: var(--navy-deep); margin: 0 0 14px }
 
-/* Cards */
-.card { background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 20px }
-h2.section { font: 500 19px/1.2 var(--head); text-transform: uppercase; letter-spacing: .1em; color: var(--navy-deep); margin: 0 0 14px }
-
-.invoice-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 20px; align-items: baseline }
-.vendor { font-size: 20px; font-weight: 700; margin: 0; text-wrap: balance }
-.amount { font-size: 28px; font-weight: 700 }
-.desc { margin: 4px 0 14px; color: var(--ink); max-width: 60ch }
-.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px 20px; margin: 0 }
-.facts dt { font-size: 13px; color: var(--soft) }
-.facts dd { margin: 0; font-weight: 500; overflow-wrap: anywhere }
-.docs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px }
-.doc { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--panel) }
-.doc svg { width: 14px; height: 14px }
-.doc.miss { background: var(--no-tint); color: var(--no); font-weight: 500 }
-
-/* Coding list */
+/* Invoice */
+.inv-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 20px }
+.vendor { font-size: 22px; font-weight: 700; margin: 0 }
+.amount { font-size: 30px; font-weight: 700 }
+.desc { margin: 2px 0 16px }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px 20px; margin: 0 0 18px }
+.facts dt { font-size: 13px; color: var(--soft) } .facts dd { margin: 0; font-weight: 500 }
 .coding { width: 100%; border-collapse: collapse }
 .coding th, .coding td { text-align: left; padding: 10px 8px; border-top: 1px solid var(--rule); vertical-align: top }
 .coding thead th { border-top: 0; font-size: 13px; font-weight: 500; color: var(--soft); padding-top: 0 }
-.coding tbody th { font-weight: 500; width: 30% }
-.blank { color: var(--info); font-weight: 500 }
-.was { color: var(--soft); text-decoration: line-through; text-decoration-color: var(--no) }
+.coding tbody th { font-weight: 500; width: 34% }
+.blank { color: var(--info); font-weight: 700 }
+.was { color: var(--soft); text-decoration: line-through }
 .use { font-weight: 700 }
-.use.changed { background: var(--blue-tint); color: var(--ink); border-radius: 3px; padding: 1px 6px; -webkit-box-decoration-break: clone; box-decoration-break: clone }
-.use.changed.fund { background: var(--gold-tint); color: var(--gold-ink) }
-.reason { display: block; font-size: 13px; color: var(--soft); margin-top: 2px; font-weight: 400 }
-.scroll-x { overflow-x: auto }
+.use.changed { background: var(--gold-tint); color: var(--gold-ink); border-radius: 3px; padding: 1px 6px }
 
-/* Check */
-.checkbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px }
+.go { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 20px }
+.btn { font: 500 17px var(--body); border-radius: 6px; padding: 12px 22px; cursor: pointer; border: 1px solid transparent; background: var(--blue); color: #fff }
+.btn:hover { background: color-mix(in srgb, var(--blue) 86%, #000) }
+.btn.quiet { background: var(--paper); color: var(--ink); border-color: var(--rule); font-size: 14px; padding: 7px 12px }
+.btn:disabled { opacity: .45; cursor: not-allowed }
 .hint { font-size: 14px; color: var(--soft) }
-.working { display: flex; align-items: center; gap: 12px }
-.bar { flex: 1; min-width: 120px; height: 6px; border-radius: 3px; background: var(--panel); overflow: hidden }
-.bar i { display: block; height: 100%; width: 40%; background: var(--blue); border-radius: 3px; animation: slide 1.4s ease-in-out infinite }
-@keyframes slide { from { transform: translateX(-100%) } to { transform: translateX(250%) } }
-@media (prefers-reduced-motion: reduce) { .bar i { animation: none; width: 100% } }
-
-/* Answer */
-.verdict { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border-radius: 8px; margin-bottom: 18px }
-.verdict svg { width: 28px; height: 28px; flex: none; margin-top: 2px }
-.verdict .what { font-size: 22px; font-weight: 700; line-height: 1.25; margin: 0 0 4px; text-wrap: balance }
-.verdict p { margin: 0; max-width: 62ch }
-.v-allowed { background: var(--ok-tint); color: var(--ok) } .v-not_allowed { background: var(--no-tint); color: var(--no) }
-.v-needs_info { background: var(--info-tint); color: var(--info) } .v-escalate { background: var(--ask-tint); color: var(--ask) }
-.verdict p { color: var(--ink) }
-
-/* Who pays: signature */
-.who { list-style: none; margin: 0 0 20px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; counter-reset: f }
-.who li { counter-increment: f; position: relative; border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px 12px; background: var(--panel); display: flex; flex-direction: column; gap: 4px; min-width: 0 }
-.who .code { font-size: 12px; color: var(--soft) }
-.who .name { font-weight: 700; line-height: 1.25 }
-.who .name::before { content: counter(f) ". "; color: var(--soft); font-weight: 500 }
-.who .state { font-size: 13px; font-weight: 500 }
-.who .why { font-size: 13px; color: var(--soft); line-height: 1.4 }
-.who li.pays { background: var(--gold-tint); border-color: var(--gold); box-shadow: 0 2px 8px color-mix(in srgb, var(--gold) 35%, transparent) }
-.who li.pays .state { color: var(--gold-ink) }
-.who li.cannot .state { color: var(--no) }
-.who li.cannot .name { color: var(--soft) }
-.who li.not_needed .state, .who li.unclear .state { color: var(--soft) }
-.who-label { font-size: 14px; color: var(--soft); margin: -8px 0 10px }
-.who li.pays.fresh { animation: lit 1.1s cubic-bezier(.16,1,.3,1) both }
-@keyframes lit { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 70%, transparent); transform: translateY(2px) } 100% { box-shadow: 0 2px 8px color-mix(in srgb, var(--gold) 35%, transparent); transform: none } }
-@media (prefers-reduced-motion: reduce) { .who li.pays.fresh { animation: none } }
-
-.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 18px }
-.ask-box { margin-top: 14px; display: flex; flex-direction: column; gap: 8px }
-.ask-box label { font-weight: 500 }
-textarea { width: 100%; min-height: 84px; font: 15px/1.5 var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 10px }
-.done { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 8px; background: var(--panel); margin-top: 18px }
-.done b { font-weight: 700 }
 
 /* Trace */
-.trace-intro { margin: 0 0 14px; max-width: 62ch }
-.trace { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column }
+.trace { list-style: none; margin: 0; padding: 0 }
 .trace li { display: grid; grid-template-columns: 32px 1fr; gap: 0 12px; position: relative; padding-bottom: 14px }
 .trace li:not(:last-child)::after { content: ""; position: absolute; left: 15px; top: 32px; bottom: 0; width: 2px; background: var(--rule) }
-.trace .ic { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--panel); color: var(--navy-deep); border: 1px solid var(--rule) }
-.trace .ic svg { width: 17px; height: 17px }
-.trace li.st-done .ic { background: var(--blue-tint); color: var(--blue); border-color: transparent }
-.trace li.st-error .ic { background: var(--no-tint); color: var(--no); border-color: transparent }
-.trace li.st-running .ic { border-color: var(--blue); }
-.trace li.st-final .ic { background: var(--gold-tint); color: var(--gold-ink); border-color: var(--gold) }
-.trace .t { font-weight: 500; padding-top: 5px; line-height: 1.35 }
-.trace .d { font-size: 14px; color: var(--soft); margin-top: 2px; overflow-wrap: anywhere }
-.trace .by { font-size: 12px; color: var(--soft); font-style: italic }
-.trace li.st-running .t::after { content: ""; display: inline-block; width: 12px; height: 12px; margin-left: 8px; vertical-align: -1px; border: 2px solid var(--rule); border-top-color: var(--blue); border-radius: 50%; animation: spin .9s linear infinite }
-.trace li.enter { animation: stepin .35s cubic-bezier(.16,1,.3,1) both }
+.ic { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--panel); color: var(--navy-deep); border: 1px solid var(--rule) }
+.ic svg { width: 17px; height: 17px }
+.st-done .ic { background: var(--blue-tint); color: var(--blue); border-color: transparent }
+.st-error .ic { background: var(--no-tint); color: var(--no); border-color: transparent }
+.st-running .ic { border-color: var(--blue) }
+.st-final .ic { background: var(--gold-tint); color: var(--gold-ink); border-color: var(--gold) }
+.t { font-weight: 500; padding-top: 5px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px }
+.st-running .t::after { content: ""; width: 12px; height: 12px; border: 2px solid var(--rule); border-top-color: var(--blue); border-radius: 50%; animation: spin .9s linear infinite }
+.src { font-size: 12px; font-weight: 500; border-radius: 999px; padding: 2px 9px; background: var(--panel); color: var(--soft); white-space: nowrap }
+.src.official { background: var(--blue-tint); color: #00577D }
+.src.fakedoc { background: var(--gold-tint); color: var(--gold-ink) }
+.d { font-size: 14px; color: var(--soft); margin-top: 2px }
+.why { font-size: 14px; color: var(--ink); margin-top: 3px; font-style: italic }
+.why b { font-style: normal; font-weight: 600; color: var(--blue) }
+.enter { animation: stepin .35s cubic-bezier(.16,1,.3,1) both }
 @keyframes spin { to { transform: rotate(360deg) } }
 @keyframes stepin { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
-@media (prefers-reduced-motion: reduce) { .trace li.st-running .t::after, .trace li.enter { animation: none } }
-.elapsed { font-size: 14px; color: var(--soft) }
-.explain { background: var(--panel); border-radius: 8px; padding: 14px 16px; margin-top: 4px }
-.explain h3 { font-size: 15px; margin: 0 0 4px }
-.explain p { margin: 0; max-width: 65ch }
-details.trace-wrap { margin-top: 18px; border-top: 1px solid var(--rule); padding-top: 14px }
-details.trace-wrap > summary { cursor: pointer; font-weight: 500; color: var(--blue); list-style: none; display: inline-flex; align-items: center; gap: 6px }
-details.trace-wrap > summary::-webkit-details-marker { display: none }
-details.trace-wrap > summary svg { width: 16px; height: 16px; transition: transform .15s ease-out }
-details.trace-wrap[open] > summary svg { transform: rotate(90deg) }
-details.trace-wrap .trace { margin-top: 14px }
-details.more { margin-top: 18px; border-top: 1px solid var(--rule); padding-top: 14px }
-details.more > summary { cursor: pointer; font-weight: 500; color: var(--blue); list-style: none; display: inline-flex; align-items: center; gap: 6px }
-details.more > summary::-webkit-details-marker { display: none }
-details.more > summary svg { width: 16px; height: 16px; transition: transform .15s ease-out }
-details.more[open] > summary svg { transform: rotate(90deg) }
-.more-body { display: flex; flex-direction: column; gap: 14px; margin-top: 14px }
-.more-body h3 { font-size: 14px; font-weight: 700; margin: 0 0 6px }
-blockquote { margin: 0; padding: 12px 14px; background: var(--panel); border-radius: 6px; font-size: 15px; line-height: 1.55 }
-.src { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; font-size: 13px; color: var(--soft); margin-bottom: 4px }
-.src b { color: var(--ink); font-weight: 500 }
-.found { color: var(--ok); font-weight: 500 } .notfound { color: var(--no); font-weight: 500 }
-.tag-fake { font-size: 11px; font-weight: 700; color: var(--gold-ink); background: var(--gold-tint); border-radius: 3px; padding: 1px 5px; margin-left: 4px; text-transform: uppercase; letter-spacing: .04em }
-.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px }
-.checks li { display: grid; grid-template-columns: 18px 1fr; gap: 6px }
-.checks svg { width: 16px; height: 16px; margin-top: 3px }
-.c-ok { color: var(--ok) } .c-bad { color: var(--no) } .c-missing { color: var(--info) } .c-info { color: var(--soft) }
-.empty { color: var(--soft) }
-.err { color: var(--no); font-weight: 500 }
+@media (prefers-reduced-motion: reduce) { .st-running .t::after, .enter { animation: none } }
+/* Trace categories: one color per kind of source */
+.trace li { --c: var(--c-check); --ct: var(--c-check-t) }
+.trace li.cat-rule { --c: var(--c-rule); --ct: var(--c-rule-t) }
+.trace li.cat-vet { --c: var(--c-vet); --ct: var(--c-vet-t) }
+.trace li.cat-claude { --c: var(--c-claude); --ct: var(--c-claude-t) }
+.trace li.cat-pivot { --c: var(--c-pivot); --ct: var(--c-pivot-t) }
+.trace li.st-done .ic, .trace li.st-final .ic { background: var(--ct); color: var(--c); border-color: transparent }
+.trace li.st-running .ic { border-color: var(--c); color: var(--c) }
+.sb { border-left: 3px solid var(--c); padding: 0 0 2px 12px; min-width: 0 }
+.cat { display: block; font: 600 11px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--c); padding-top: 4px }
+.t { padding-top: 3px }
+.trace li.cat-pivot .sb { background: var(--ct); border: 2px solid var(--c); border-radius: 8px; padding: 8px 14px 10px }
+.trace li.cat-pivot .t { font-weight: 700; font-size: 17px; color: var(--c) }
+.trace li.cat-pivot .d { color: var(--ink) }
+.trace li.cat-pivot.dead { --c: var(--no); --ct: var(--no-tint) }
+.trace li.find-bad .t { color: var(--no); font-weight: 700 }
+.trace li.find-ok .t { color: var(--ok) }
+.tlegend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--soft); margin: -4px 0 14px }
+.tlegend span { display: inline-flex; align-items: center; gap: 6px }
+.tlegend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block }
+.src.official, .src.fakedoc { background: var(--panel); color: var(--soft) }
+/* Month strip for veteran_history */
+.hist { margin: 10px 0 2px; max-width: 600px }
+.hist-cap { font-weight: 700; font-size: 15px; margin-bottom: 6px }
+.hist-cap.over { color: var(--no) } .hist-cap.ok { color: var(--ok) }
+.cells { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px }
+.cell { height: 34px; border-radius: 4px; background: var(--panel); border: 1px solid var(--rule) }
+.cell.paid { background: var(--blue); border-color: var(--blue) }
+.cell.now { border: 2px dashed var(--ok); background: var(--ok-tint) }
+.cell.now.over { border-color: var(--no); background: var(--no-tint) }
+.mlab { font-size: 11px; color: var(--soft); text-align: center; margin-top: 3px; white-space: nowrap; overflow: hidden }
+.mlab.now { color: var(--ink); font-weight: 700 }
+.hlegend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--soft); margin-top: 8px }
+.hlegend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; background: var(--panel); border: 1px solid var(--rule) }
+.hlegend i.paid { background: var(--blue); border-color: var(--blue) }
+.hlegend i.now { border: 2px dashed var(--no); background: var(--no-tint) }
+.hlegend i.now.ok { border-color: var(--ok); background: var(--ok-tint) }
+.hist.grow .cell { animation: cellin .3s ease-out both }
+@keyframes cellin { from { opacity: 0; transform: scaleY(.4) } to { opacity: 1; transform: none } }
+@media (prefers-reduced-motion: reduce) { .hist.grow .cell { animation: none } }
+.tq { margin: 8px 0 2px; padding: 10px 14px; background: var(--panel); border-left: 3px solid var(--gold); border-radius: 0 6px 6px 0; font-size: 16px; line-height: 1.5 }
+.tq span { display: block; margin-top: 6px; font-size: 13px }
+.elapsed { font-size: 14px; color: var(--soft); margin: 4px 0 0 44px }
 
-/* Reviewer view */
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--rule); overflow-x: auto }
-.tabs button { font: 500 15px var(--body); color: var(--soft); background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 12px; cursor: pointer; white-space: nowrap }
-.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--gold) }
-.tbl { width: 100%; border-collapse: collapse; font-size: 14px }
-.tbl th, .tbl td { text-align: left; padding: 8px; border-bottom: 1px solid var(--rule); vertical-align: top }
-.tbl thead th { font-size: 12px; font-weight: 500; color: var(--soft); text-transform: uppercase; letter-spacing: .06em }
-.chip { display: inline-block; font-size: 12px; font-weight: 500; border-radius: 999px; padding: 2px 9px; white-space: nowrap }
-.k-allowed { background: var(--ok-tint); color: var(--ok) } .k-not_allowed { background: var(--no-tint); color: var(--no) } .k-needs_info { background: var(--info-tint); color: var(--info) } .k-escalate { background: var(--ask-tint); color: var(--ask) } .k-none { background: var(--panel); color: var(--soft) }
-.yes { color: var(--ok); font-weight: 700 } .no { color: var(--no); font-weight: 700 }
-.scoreline { font-size: 17px; font-weight: 500; max-width: 70ch; margin: 4px 0 16px }
-.rulebook details { border-top: 1px solid var(--rule); padding: 12px 0 }
-.rulebook summary { cursor: pointer; font-weight: 700 }
-.rulebook .body { max-width: 75ch; font-size: 15px; margin-top: 8px }
-.rulebook .body h4 { font-size: 14px; margin: 14px 0 4px }
-.rulebook .body p { margin: 0 0 8px }
-.order-list { margin: 0 0 12px; padding-left: 22px }
-.order-list li { margin-bottom: 4px }
-a { color: var(--blue); text-underline-offset: 3px }
-.form-row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; margin-bottom: 14px }
-.field { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
-.field label { font-size: 14px; font-weight: 500 }
-.field input { font: 15px var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 9px 10px; min-width: 0; width: 220px; max-width: 100% }
-.note { font-size: 14px; color: var(--soft); max-width: 65ch; margin: 0 0 14px }
-.privacy { display: flex; gap: 10px; align-items: flex-start; background: var(--panel); border-radius: 8px; padding: 12px 14px; font-size: 14px; margin: 0 0 16px; max-width: 70ch }
-.privacy svg { width: 18px; height: 18px; flex: none; margin-top: 2px; color: var(--navy) }
-.matrix td, .matrix th { text-align: center; padding: 6px 4px }
-.matrix td:first-child, .matrix th:first-child, .matrix td:nth-child(2), .matrix th:nth-child(2) { text-align: left }
-.matrix tr.pick { cursor: pointer }
-.matrix tr.pick:hover td { background: var(--panel) }
-.matrix tr.sel td { background: var(--blue-tint) }
-.cell-y { color: var(--ok); font-weight: 700 } .cell-n { color: var(--no); font-weight: 700 } .cell-na { color: var(--soft) }
-.crit { color: var(--no); font-size: 11px; font-weight: 700; margin-left: 2px }
-.casebox { border: 1px solid var(--rule); border-radius: 8px; padding: 16px; margin-top: 14px; display: flex; flex-direction: column; gap: 12px }
-.casebox h3 { font-size: 16px; margin: 0 }
-.kv2 { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 14px; margin: 0 }
-.kv2 dt { color: var(--soft) } .kv2 dd { margin: 0 }
-.lbl { display: inline-flex; gap: 6px; margin-left: 8px }
-.lbl button { font: 500 12px var(--body); border: 1px solid var(--rule); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 2px 10px; cursor: pointer }
-.lbl button[aria-pressed="true"] { background: var(--navy); color: #fff; border-color: var(--navy) }
-.judge-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 14px }
-.setup { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 16px; align-items: end; margin-bottom: 14px }
-.setup .field input, .setup .field select { width: 100% }
-.check-row { display: flex; align-items: center; gap: 8px; font-size: 15px }
-footer { max-width: 860px; margin: 0 auto; padding-block: 0 32px; font-size: 13px; color: var(--soft) }
+/* Answer */
+.verdict { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border-radius: 8px; margin-bottom: 20px }
+.verdict svg { width: 28px; height: 28px; flex: none; margin-top: 2px }
+.what { font-size: 23px; font-weight: 700; line-height: 1.25; margin: 0 0 4px }
+.verdict p { margin: 0; color: var(--ink) }
+.verdict p.what { color: inherit }
+.v-allowed { background: var(--ok-tint); color: var(--ok) } .v-not_allowed { background: var(--no-tint); color: var(--no) }
+.v-needs_info { background: var(--info-tint); color: var(--info) } .v-escalate { background: var(--ask-tint); color: var(--ask) }
+h3 { font-size: 15px; margin: 0 0 8px }
+.missed { margin: 0 0 6px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px }
+.missed li { display: grid; grid-template-columns: 20px 1fr; gap: 8px; font-size: 17px }
+.missed svg { width: 18px; height: 18px; margin-top: 4px; color: var(--gold-ink) }
+details { margin-top: 20px; border-top: 1px solid var(--rule); padding-top: 14px }
+summary { cursor: pointer; font-weight: 500; color: var(--blue) }
+blockquote { margin: 12px 0 0; padding: 12px 14px; background: var(--panel); border-radius: 6px }
+.qsrc { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; font-size: 13px; color: var(--soft); margin-bottom: 4px }
+.qsrc b { color: var(--ink); font-weight: 500 }
+.found { color: var(--ok); font-weight: 500 } .notfound { color: var(--no); font-weight: 500 }
+.why { margin: 10px 0 0; font-size: 15px }
+.err { color: var(--no); font-weight: 500; margin: 0 }
+footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13px; color: var(--soft) }
+@media (max-width: 560px) { .card { padding: 16px } .what { font-size: 20px } .coding th, .coding td { padding: 9px 5px } }
 </style>
 
 <header class="shell">
   <div class="in gutter">
     <h1 class="brand">Grant Coding Check</h1>
-    <div class="meta">
-      <span class="fake">Fake data</span>
-      <span>Basecamp prototype</span>
-      <button class="linkbtn" id="toggle-view" type="button">Reviewer tools</button>
-    </div>
+    <div class="meta"><span class="fake">Fake data</span><span>Basecamp prototype</span></div>
   </div>
 </header>
-
-<main class="gutter" id="analyst"></main>
-<main class="gutter" id="reviewer" hidden></main>
-
-<footer class="gutter">Invoices, participants, funds, the county agreement, the foundation letter and policy FIN-07 are invented for this demo. Federal rule text is the official eCFR text. Not compliance advice.</footer>
+<main class="gutter" id="app"></main>
+<footer class="gutter">The invoices, veteran, funds, county agreement, foundation letter and finance policy are invented for this demo. Federal rule text is the official eCFR text. Not compliance advice.</footer>
 
 <script type="application/json" id="regs-json">/*REGS*/</script>
 <script>
@@ -251,514 +189,249 @@ footer { max-width: 860px; margin: 0 auto; padding-block: 0 32px; font-size: 13p
 </script>
 <script>
 (function () {
-  const REGS = JSON.parse(document.getElementById("regs-json").textContent);
-  const DOCS = allDocs(REGS);
-  const $ = (s, el = document) => el.querySelector(s);
+  const DOCS = allDocs(JSON.parse(document.getElementById("regs-json").textContent));
+  // The demo queue: one invoice the check approves (after catching a missed fact), one no grant can pay
+  const QUEUE = ["INV-02", "INV-14"].map(id => INVOICES.find(i => i.id === id));
+  const $ = s => document.querySelector(s);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  // Plain-language labels
-  const WORDS = { allowed: "OK to pay", not_allowed: "Can't pay this way", needs_info: "Need more info", escalate: "Ask finance", none: "Not checked" };
+  const WORDS = { allowed: "OK to pay", not_allowed: "Can't pay this way", needs_info: "Need more info", escalate: "Ask finance" };
   const FUND_NAME = { "SSVF-H": "SSVF", "COC-SSO-H": "HUD CoC services", "CHF-H": "County Housing Fund", "SSVF-D": "SSVF", "SSVF-V": "SSVF", "COC-SSO-V": "HUD CoC services", "RIDGE": "Ridgeline Foundation" };
   const CAT_NAME = { "TFA-Rent": "Rent", "TFA-Rent-Fees": "Rent fees", "TFA-Utility": "Utility bill", "TFA-Security-Deposit": "Security deposit", "TFA-Utility-Deposit": "Utility deposit", "TFA-Moving": "Moving costs", "TFA-GHSA": "Housing stability items", "SS-Case-Management": "Case management", "SS-Transportation": "Transportation", "SS-Legal": "Legal services", "Client-Flex": "Client flexible help", "Staff-Training": "Staff training", "Admin": "Administration" };
-  const FIELD_NAME = { fund: "Who pays (fund)", category: "What it is (cost category)", cost_type: "Program or Admin", service_period: "Service month" };
-  const FUND_STATE = { pays: "Pays this", cannot: "Can't pay", not_needed: "Not needed", unclear: "Not clear" };
-  const fundLabel = f => f ? `${FUND_NAME[f] || f}` : "No fund";
-  const valueLabel = (k, v) => !v ? "" : k === "fund" ? fundLabel(v) : k === "category" ? (CAT_NAME[v] || v) : k === "service_period" ? monthName(v) : v;
+  const FIELDS = { fund: "Which grant pays", category: "Type of cost", cost_type: "Program or admin", service_period: "Service month" };
   const monthName = v => { const m = /^(\d{4})-(\d{2})$/.exec(v || ""); return m ? new Date(+m[1], +m[2] - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" }) : v; };
+  const label = (k, v) => !v ? "" : k === "fund" ? (FUND_NAME[v] || v) : k === "category" ? (CAT_NAME[v] || v) : k === "service_period" ? monthName(v) : v;
 
+  const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
   const ICON = {
-    allowed: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m7.5 12.5 3 3 6-6.5"/></svg>',
-    not_allowed: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8.5 8.5 7 7M15.5 8.5l-7 7"/></svg>',
-    needs_info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>',
-    escalate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M12 8.5v3M12 14v.01"/></svg>',
-    doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="m9 13 2 2 4-4"/></svg>',
-    miss: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M12 10v4M12 17v.01"/></svg>',
-    chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>',
-    prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>',
-    ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
-    bad: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/></svg>',
-    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="2.5"/></svg>'
+    paperwork: svg('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
+    person: svg('<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'),
+    count: svg('<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 13h2M14 13h2M8 17h2"/>'),
+    history: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+    doc: svg('<path d="M4 5a2 2 0 0 1 2-2h5v18H6a2 2 0 0 0-2 2z"/><path d="M20 5a2 2 0 0 0-2-2h-5v18h5a2 2 0 0 1 2 2z"/>'),
+    write: svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/>'),
+    pivot: svg('<path d="M4 7h12l-3-3M20 17H8l3 3"/>'),
+    final: svg('<path d="m5 12.5 4.5 4.5L19 7.5"/>'),
+    bad: svg('<path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/>'),
+    flag: svg('<path d="M5 21V4h11l-2 4 2 4H5"/>'),
+    allowed: svg('<circle cx="12" cy="12" r="10"/><path d="m7.5 12.5 3 3 6-6.5"/>'),
+    not_allowed: svg('<circle cx="12" cy="12" r="10"/><path d="m8.5 8.5 7 7M15.5 8.5l-7 7"/>'),
+    needs_info: svg('<circle cx="12" cy="12" r="10"/><path d="M12 7.5v5.5M12 16.5v.01"/>'),
+    escalate: svg('<path d="M4 5h16v11H9l-5 4z"/><path d="M12 8.5v3M12 14v.01"/>')
   };
-  ICON.k_paperwork = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>';
-  ICON.k_person = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>';
-  ICON.k_count = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 13h2M14 13h2M8 17h2"/></svg>';
-  ICON.k_doc = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h5v18H6a2 2 0 0 0-2 2z"/><path d="M20 5a2 2 0 0 0-2-2h-5v18h5a2 2 0 0 1 2 2z"/></svg>';
-  ICON.k_start = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h4"/></svg>';
-  ICON.k_write = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/></svg>';
-  ICON.k_final = ICON.ok;
-  ICON.lock = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
-  ICON.missing = ICON.needs_info.replace('stroke-width="2.2"', 'stroke-width="2.4"');
+  const ERR = {
+    not_granted: "Claude isn't allowed on this page yet. Allow it from the page's permissions, then reload.",
+    sampling_disabled: "Claude isn't available for this account.",
+    rate_limited: "Too many checks at once. Wait a minute, then run it again.",
+    invalid_json: "The answer came back garbled. Run it again.",
+    refused: "Claude declined this check.",
+    session_expired: "Sign in again, then run it again."
+  };
 
-  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-  const state = {
-    idx: Math.min(Math.max(store.get("gcc.idx", 0), 0), INVOICES.length - 1),
-    results: store.get("gcc.results", {}),
-    decisions: store.get("gcc.decisions", {}),
-    running: {}, sample: undefined, evalRun: null, asking: false,
-    view: "analyst", tab: "evalruns", runs: store.get("gcc.runs", []), openRun: null, openCase: null, evalBusy: null, evalForm: { set: "core", n: 10, type: "tuning", mode: "quick", judge: true }, practice: store.get("gcc.practice", null), practiceRun: null
-  };
-  const save = () => { store.set("gcc.results", Object.fromEntries(Object.entries(state.results).map(([k, v]) => { const { fresh, ...rest } = v || {}; return [k, rest]; }))); store.set("gcc.decisions", state.decisions); store.set("gcc.idx", state.idx); };
+  const KEY = "gcc.demo.results";
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
+  const keep = () => { try { localStorage.setItem(KEY, JSON.stringify(S.results)); } catch {} };
+  const S = { sample: undefined, tools: false, run: null, results: load(), cur: null, error: null, drag: null };
+  const curInv = () => QUEUE.find(i => i.id === S.cur) || null;
 
   (async () => {
-    try { state.sample = window.claude && window.claude.use ? await window.claude.use("sample") : null; } catch { state.sample = null; }
-    if (state.sample) { try { const lim = await state.sample.limits(); state.tools = !!(lim && lim.tools); } catch { state.tools = false; } }
+    try { S.sample = window.claude && window.claude.use ? await window.claude.use("sample") : null; } catch { S.sample = null; }
+    if (S.sample) { try { const l = await S.sample.limits(); S.tools = !!(l && l.tools); } catch { S.tools = false; } }
     render();
   })();
 
-  const ERR = {
-    not_granted: "Claude isn't allowed on this page yet. Allow it from the page's permissions, then reload this page.",
-    sampling_disabled: "Claude isn't available for this account.",
-    rate_limited: "Too many checks at once. Wait a minute, then check again.",
-    invalid_json: "The answer came back garbled. Check again.",
-    refused: "Claude declined this check.",
-    session_expired: "Sign in again, then check again."
-  };
-
-  function traceLog(invId, ev) {
-    const run = state.running[invId]; if (!run) return;
-    const i = run.trace.findIndex(e => e.id === ev.id);
-    if (i >= 0) run.trace[i] = { ...run.trace[i], ...ev }; else run.trace.push({ ...ev, fresh: true });
-    updateLive(invId);
+  const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monLabel = (m, i) => { const [y, mo] = m.split("-"); return MON[+mo - 1] + (i === 0 || mo === "01" ? " '" + y.slice(2) : ""); };
+  function histStrip(h, fresh) {
+    if (!h || !h.found) return "";
+    const over = !h.within_limit, used = h.used_in_current_12_month_period;
+    const cells = h.last_12_months.map((m, i) => {
+      const now = m === h.this_invoice_month, paid = h.paid_months.includes(m);
+      return `<div class="cell ${paid ? "paid" : ""} ${now ? "now" + (over ? " over" : "") : ""}" style="${fresh ? `animation-delay:${i * 70}ms` : ""}" title="${monthName(m)}: ${now ? "this invoice" : paid ? "paid by SSVF" : "not paid"}"></div>`;
+    }).join("");
+    const labs = h.last_12_months.map((m, i) => `<div class="mlab ${m === h.this_invoice_month ? "now" : ""}">${monLabel(m, i)}</div>`).join("");
+    return `<div class="hist${fresh ? " grow" : ""}" role="img" aria-label="${used} of ${h.limit_per_12_months} ${h.assistance} months already paid in the last 12 months">
+      <div class="hist-cap ${over ? "over" : "ok"}">${used} of ${h.limit_per_12_months} ${esc(h.assistance)} months used${over ? ". This month would go over the limit" : ". This month fits under the limit"}</div>
+      <div class="cells">${cells}</div><div class="cells">${labs}</div>
+      <div class="hlegend"><span><i class="paid"></i>Paid by SSVF</span><span><i></i>Not paid</span><span><i class="now ${over ? "" : "ok"}"></i>This invoice</span><span>Limit: ${h.limit_per_12_months} months in any 12 (${esc(String(h.income_level || "").toLowerCase())})</span></div>
+    </div>`;
   }
-  function updateLive(invId) {
-    const run = state.running[invId];
-    if (!run || state.view !== "analyst" || INVOICES[state.idx].id !== invId) return;
-    const el = $("#trace-live"); if (el) { el.innerHTML = traceItems(run.trace); run.trace.forEach(e => { e.fresh = false; }); }
-    const t = $("#elapsed"); if (t) t.textContent = secs(Date.now() - run.t0);
-  }
-  const secs = ms => { const s = Math.round(ms / 1000); return s < 60 ? `${s} seconds` : `${Math.floor(s / 60)} min ${s % 60} s`; };
+  const srcClass = s => /eCFR/.test(s) ? "official" : /fake/.test(s) ? "fakedoc" : "";
+  const CAT = { paperwork: "check", count: "check", person: "vet", history: "vet", doc: "rule", final: "rule", write: "claude", pivot: "pivot" };
+  const CAT_LABEL = { check: "Page check", vet: "Veteran record", rule: "Rules", claude: "Claude", pivot: "Change of path" };
+  const finding = e => e.state !== "done" ? "" : /^(Paperwork problem|SSVF .* limit reached|Over a limit)/.test(e.title) ? " find-bad" : /^(Paperwork complete|Within the SSVF|All limits OK)/.test(e.title) ? " find-ok" : "";
+  const step = e => { const c = CAT[e.kind] || "claude"; return `<li class="cat-${c} st-${e.state || "done"}${e.kind === "final" && e.state !== "error" ? " st-final" : ""}${e.kind === "pivot" && e.data && e.data.next_fund === "none" ? " dead" : ""}${finding(e)}${e.fresh ? " enter" : ""}"><span class="ic">${e.state === "error" ? ICON.bad : ICON[e.kind] || ICON.final}</span><div class="sb"><span class="cat">${CAT_LABEL[c]}</span><div class="t">${esc(e.title)}${e.source ? e.source.split(" · ").map(x => `<span class="src ${srcClass(x)}">${esc(x)}</span>`).join("") : ""}</div>${e.why ? `<div class="why"><b>Why:</b> ${esc(e.why)}</div>` : ""}${e.kind === "history" && e.data && e.data.found ? histStrip(e.data, e.grow) : e.detail ? `<div class="d">${e.kind === "pivot" ? "<b>Because:</b> " : ""}${esc(e.detail)}</div>` : ""}${e.quote ? `<blockquote class="tq">"${esc(e.quote)}"<span class="${e.found ? "found" : "notfound"}">${e.found ? "Matches the source text word for word" : "Not found in the source. Read the rule yourself"}</span></blockquote>` : ""}</div></li>`; };
 
-  async function runCheck(inv, opts = {}) {
-    if (!state.sample) return;
-    const ctl = new AbortController();
-    const run = { ctl, trace: [], t0: Date.now(), mode: state.tools ? "tools" : "oneshot" };
-    state.running[inv.id] = run;
-    const timer = setInterval(() => updateLive(inv.id), 1000);
-    render();
-    traceLog(inv.id, { id: "start", kind: "start", title: `Reading the invoice: ${inv.vendor}, ${money(inv.amount)}`, detail: inv.description, state: "done" });
-    if (run.mode === "oneshot") oneShotSteps(inv).forEach((st, n) => traceLog(inv.id, { id: "pre" + n, ...st }));
-    let writing = false;
+  // One step at a time: a step appears, waits for its own result, shows the result (text, chart or quote),
+  // and stays alone on screen for a reading pause before the next step appears.
+  const PACE = 1600, RESULT_DELAY = 700;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  let queue = [], pumping = null;
+  const dwell = e => PACE + (e.data || e.quote ? 1400 : 0) + Math.min(String(e.detail || "").length * 12, 1200) + (e.why ? 600 : 0);
+  function show(ev) {
+    if (!S.run) return false;
+    const t = S.run.trace, i = t.findIndex(e => e.id === ev.id);
+    const grows = !!ev.data && !(i >= 0 && t[i].data);
+    if (i >= 0) t[i] = { ...t[i], ...ev, grow: grows }; else t.push({ ...ev, fresh: true, grow: grows });
+    const el = $("#trace"); if (el) { el.innerHTML = t.map(step).join(""); t.forEach(e => { e.fresh = false; e.grow = false; }); }
+    return i < 0;
+  }
+  // Wait until this step's result is in the queue (or the run has ended), then take it out of the queue.
+  async function resultFor(id) {
+    for (;;) {
+      const k = queue.findIndex(e => e.id === id && e.state && e.state !== "running");
+      if (k >= 0) return queue.splice(k, 1)[0];
+      if (!S.run || S.run.ended) return null;
+      await sleep(100);
+    }
+  }
+  // The first await makes pump() return before it can finish, so `pumping` is always assigned before it is cleared.
+  async function pump() {
+    await null;
     try {
-      const callOpts = { signal: ctl.signal, onText: ({ text }) => { if (!writing && text.includes("{")) { writing = true; traceLog(inv.id, { id: "write", kind: "write", title: "Writing the answer", detail: "Putting the findings into plain words", state: "running" }); } } };
+      while (queue.length) {
+        const ev = queue.shift();
+        if (!show(ev)) continue;                       // update to a step already on screen: no pause
+        let shown = S.run && S.run.trace.find(e => e.id === ev.id);
+        if (ev.state === "running") {
+          await sleep(RESULT_DELAY);
+          const res = await resultFor(ev.id);
+          if (res) { show(res); shown = S.run && S.run.trace.find(e => e.id === ev.id); }
+        }
+        await sleep(shown ? dwell(shown) : PACE);
+      }
+    } finally { pumping = null; }
+  }
+  function log(ev) { queue.push(ev); if (!pumping) pumping = pump(); }
+  async function drain() { while (pumping) { try { await pumping; } catch { pumping = null; } } }
+
+  async function check() {
+    const INV = curInv();
+    if (!INV || !S.sample || S.run) return;
+    S.run = { id: INV.id, trace: [], t0: Date.now() }; S.error = null; queue = []; pumping = null;
+    render();
+    const timer = setInterval(() => { const el = $("#elapsed"); if (el && S.run) { const n = Math.round((Date.now() - S.run.t0) / 1000); el.textContent = n + (n === 1 ? " second" : " seconds"); } }, 1000);
+    let writing = false;
+    const onText = ({ text }) => { if (!writing && text.includes("{")) { writing = true; log({ id: "write", kind: "write", title: "Writing the answer for the analyst", state: "running" }); } };
+    try {
       let r;
-      if (run.mode === "tools") {
-        traceLog(inv.id, { id: "think", kind: "write", title: "Deciding what to check", detail: "Claude is planning which steps to take", state: "running" });
-        const tools = makeTools(inv, DOCS, ev => { traceLog(inv.id, { id: "think", state: "done" }); traceLog(inv.id, ev); });
-        r = await state.sample.json(buildToolPrompt(inv, DOCS), { ...callOpts, tools });
+      if (S.tools) {
+        log({ id: "plan", kind: "write", title: "Claude is deciding what to check", state: "running" });
+        r = await S.sample.json(buildToolPrompt(INV, DOCS), { onText, tools: makeTools(INV, DOCS, ev => { log({ id: "plan", state: "done", title: "Claude planned the check" }); log(ev); }) });
       } else {
-        traceLog(inv.id, { id: "think", kind: "write", title: "Claude is reading the rules", detail: "This takes about 30 seconds", state: "running" });
-        r = await state.sample.json(buildPrompt(inv, DOCS), { ...callOpts, ...(opts.fresh ? { cache: false } : {}) });
-        traceLog(inv.id, { id: "think", title: "Claude read the rules", detail: "Compared the invoice against the documents above", state: "done" });
+        oneShotSteps(INV).forEach((s, n) => log({ id: "pre" + n, ...s }));
+        log({ id: "plan", kind: "write", title: "Claude is reading the rules", state: "running" });
+        r = await S.sample.json(buildPrompt(INV, DOCS), { onText, cache: false });
+        log({ id: "plan", state: "done", title: "Claude read the rules" });
       }
       if (!r || typeof r !== "object" || !r.status) throw { code: "invalid_json" };
-      traceLog(inv.id, { id: "think", state: "done" });
-      traceLog(inv.id, { id: "write", kind: "write", title: "Writing the answer", detail: "Putting the findings into plain words", state: "done" });
-      r.verified = { deciding: verifyQuote(r.deciding, DOCS), supporting: (r.supporting || []).map(q => verifyQuote(q, DOCS)) };
-      const v = r.verified.deciding;
-      traceLog(inv.id, { id: "verify", kind: "final", title: v ? "Checked the quoted rule against the document" : "Checked the quoted rule against the document: no exact match", detail: v ? "The words Claude quoted appear in the rule text." : "Treat this answer with care and read the rule yourself.", state: v ? "done" : "error" });
-      r.fresh = true;
-      r.trace = run.trace.map(({ fresh, ...e }) => e);
-      r.seconds = Math.round((Date.now() - run.t0) / 1000);
-      r.mode = run.mode;
-      state.results[inv.id] = r;
-      delete state.decisions[inv.id];
+      log({ id: "write", kind: "write", title: "Claude wrote the answer for the analyst", state: "done" });
+      // One step per quote Claude used: the exact words, where they came from, and whether the page found them in the source
+      const quotes = [r.deciding, ...(r.supporting || []).slice(0, 2)].filter(q => q && q.quote);
+      quotes.forEach((q, n) => {
+        const found = verifyQuote(q, DOCS);
+        log({ id: "quote" + n, kind: "final", title: n === 0 ? "The rule that decides it" : "A supporting rule", source: DOC_SOURCE[q.doc] || "", detail: q.section || "", quote: q.quote, found, state: found ? "done" : "error" });
+      });
+      const ok = quotes.length ? verifyQuote(r.deciding, DOCS) : false;
+      r.verified = ok; S.run.ended = true; await drain(); r.trace = S.run.trace.map(({ fresh, ...e }) => e); r.seconds = Math.round((Date.now() - S.run.t0) / 1000);
+      S.results[INV.id] = r; keep();
     } catch (e) {
-      if (e && e.code !== "cancelled") state.results[inv.id] = { error: ERR[e && e.code] || "The check didn't finish. Check again.", trace: run.trace.map(({ fresh, ...x }) => x) };
-      if (e && e.code === "tools_unavailable") { state.tools = false; state.results[inv.id] = { error: "Step-by-step mode isn't available here. Check again to use the quick check." }; }
-      if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) state.sample = null;
-    } finally {
-      clearInterval(timer);
-      delete state.running[inv.id];
-      save(); render();
-    }
+      if (e && e.code === "tools_unavailable") { S.tools = false; S.error = "Step-by-step mode isn't available here. Run it again for the quick check."; }
+      else if (e && e.code !== "cancelled") S.error = ERR[e && e.code] || "The check didn't finish. Run it again.";
+      if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) S.sample = null;
+    } finally { if (S.run) S.run.ended = true; await drain(); clearInterval(timer); S.run = null; render(); }
   }
 
-  function traceItems(list) {
-    return list.map(e => `<li class="st-${e.state || "done"}${e.kind === "final" && e.state !== "error" ? " st-final" : ""}${e.fresh ? " enter" : ""}"><span class="ic">${e.state === "error" ? ICON.bad : ICON["k_" + e.kind] || ICON.info}</span><div><div class="t">${esc(e.title)}</div>${e.detail ? `<div class="d">${esc(e.detail)}</div>` : ""}${e.by === "page" ? '<div class="by">Done by this page before asking Claude</div>' : ""}</div></li>`).join("");
+  function open(id) {
+    if (S.run) return;
+    S.cur = id; S.error = null; render();
+    if (!S.results[id] && S.sample) check();
   }
 
-  // ---------- Analyst view ----------
-  function renderAnalyst() {
-    const inv = INVOICES[state.idx];
-    const r = state.results[inv.id];
-    const run = state.running[inv.id];
-    const dec = state.decisions[inv.id];
-    const req = [...STD, ...(["rent", "deposit"].includes(inv.kind) ? RENT_DOCS : [])];
-    const ok = r && r.status;
-    const sug = ok ? (r.suggested || {}) : null;
-    const flags = {}; ((ok && r.flags) || []).forEach(f => { flags[f.field] = f; });
+  function statusText(r) {
+    const sug = r && r.suggested;
+    return r.status === "allowed" && sug && sug.fund ? `Pay from ${FUND_NAME[sug.fund] || sug.fund}` : WORDS[r.status] || r.status;
+  }
 
-    const options = Object.keys(SITES).map(site => `<optgroup label="${site} site">${INVOICES.map((i, n) => i.site === site ? `<option value="${n}" ${n === state.idx ? "selected" : ""}>${i.id} · ${esc(i.vendor)} · ${money(i.amount)}${state.decisions[i.id] ? (state.decisions[i.id].kind === "accepted" ? " (done)" : " (question saved)") : ""}</option>` : "").join("")}</optgroup>`).join("");
-
-    const rows = Object.keys(FIELD_NAME).map(k => {
-      const entered = inv.analyst[k];
-      const sv = sug ? (sug[k] ?? null) : undefined;
-      const changed = sug && String(sv ?? "") !== String(entered ?? "");
-      const enteredCell = entered ? `<span class="${changed ? "was" : ""}">${esc(valueLabel(k, entered))}</span>` : '<span class="blank">Left blank</span>';
-      const useCell = !sug ? "" : `<span class="use ${changed ? "changed" : ""} ${k === "fund" ? "fund" : ""}">${esc(sv ? valueLabel(k, sv) : (k === "fund" ? "No fund can pay" : "None"))}</span>${flags[k] && flags[k].why ? `<span class="reason">${esc(flags[k].why)}</span>` : ""}`;
-      return `<tr><th scope="row">${FIELD_NAME[k]}</th><td>${enteredCell}</td>${sug ? `<td>${useCell}</td>` : ""}</tr>`;
-    }).join("");
-
-    let answer = "";
-    if (run) {
-      answer = `<section class="card"><h2 class="section">Working on it</h2>
-        <p class="trace-intro">Claude is checking this invoice against the grant rules. Each step shows up below as it happens. Nothing is saved or sent until you choose.</p>
-        <ol class="trace" id="trace-live" aria-live="polite">${traceItems(run.trace)}</ol>
-        <div class="actions" style="margin-top:4px"><button class="btn secondary small" id="stop" type="button">Stop</button><span class="elapsed" id="elapsed">${secs(Date.now() - run.t0)}</span><span class="hint">${run.mode === "tools" ? "Usually under a minute or two." : "Usually about 30 seconds."}</span></div></section>`;
-    } else if (r && r.error) {
-      answer = `<section class="card"><p class="err">${esc(r.error)}</p>${r.trace && r.trace.length ? `<ol class="trace" style="margin-top:12px">${traceItems(r.trace)}</ol>` : ""}${state.sample ? '<div class="actions"><button class="btn primary" id="recheck" type="button">Check again</button></div>' : ""}</section>`;
-    } else if (ok) {
-      const what = r.status === "allowed" && sug.fund ? `OK to pay from ${fundLabel(sug.fund)}` : WORDS[r.status] || r.status;
-      const funds = (r.funds && r.funds.length ? r.funds : SITES[inv.site].funds.map(f => ({ fund: f, verdict: f === sug.fund ? "pays" : "unclear", why: "" })));
-      const quote = (x, found) => x && x.quote ? `<blockquote><div class="src"><b>${esc(x.section || x.doc)}${DOCS[x.doc] && DOCS[x.doc].fake ? '<span class="tag-fake">Fake</span>' : ""}</b><span class="${found ? "found" : "notfound"}">${found ? "Matches the rule text" : "Not found in the rule text"}</span></div>${esc(x.quote)}</blockquote>` : "";
-      const checks = computeChecks(inv);
-      answer = `<section class="card" aria-live="polite">
-        <div class="verdict v-${r.status}">${ICON[r.status] || ""}<div><p class="what">${esc(what)}</p><p>${esc(r.summary)}</p></div></div>
-        <h2 class="section">Who pays</h2><p class="who-label">Funds are listed in the order they get charged.</p>
-        <ol class="who">${funds.map(f => `<li class="${esc(f.verdict)}${r.fresh && f.verdict === "pays" ? " fresh" : ""}"><span class="name">${esc(fundLabel(f.fund))}</span><span class="state">${FUND_STATE[f.verdict] || esc(f.verdict)}</span>${f.why ? `<span class="why">${esc(f.why)}</span>` : ""}<span class="code">${esc(f.fund)}</span></li>`).join("")}</ol>
-        <h2 class="section">Coding to enter</h2>
-        <div class="scroll-x"><table class="coding"><thead><tr><th>Field</th><th>You entered</th><th>Use this</th></tr></thead><tbody>${rows}</tbody></table></div>
-        ${r.question && !dec ? `<p><b>Open question:</b> ${esc(r.question)}</p>` : ""}
-        ${dec ? `<div class="done">${dec.kind === "accepted" ? `<b>Marked done.</b> <span>Enter this coding in your accounting system: ${esc(fundLabel(dec.coding.fund))}, ${esc(CAT_NAME[dec.coding.category] || dec.coding.category || "")}.</span>` : `<b>Saved for finance (prototype, not sent):</b> <span>${esc(dec.question)}</span>`}<button class="btn secondary small" id="undo" type="button">Undo</button></div>`
-        : state.asking ? `<div class="ask-box"><label for="ask-q">Your question for finance</label><textarea id="ask-q">${esc(r.question || "")}</textarea><div class="actions" style="margin-top:0"><button class="btn primary" id="send" type="button">Save question for finance</button><button class="btn secondary" id="cancel-ask" type="button">Cancel</button></div></div>`
-        : `<div class="actions">${sug.fund && r.status === "allowed" ? '<button class="btn primary" id="accept" type="button">Use this coding</button>' : ""}<button class="btn secondary" id="ask" type="button">Ask finance</button><button class="btn secondary small" id="recheck" type="button" style="margin-left:auto">Check again</button></div>`}
-        ${r.explain ? `<div class="explain" style="margin-top:18px"><h3>What this means</h3><p>${esc(r.explain)}</p></div>` : ""}
-        ${r.trace && r.trace.length ? `<details class="trace-wrap"${r.fresh ? " open" : ""}><summary>${ICON.chev}How this answer was found: ${r.trace.filter(e => e.kind !== "start").length} steps${r.seconds ? `, ${secs(r.seconds * 1000)}` : ""}${(() => { const n = r.trace.filter(e => e.kind === "doc" && !e.by).length; return n ? `, ${n} document${n > 1 ? "s" : ""} read` : ""; })()}</summary><ol class="trace">${traceItems(r.trace)}</ol></details>` : ""}
-        <details class="more"><summary>${ICON.chev}Show the rule behind this</summary><div class="more-body">
-          <div><h3>The rule that decides it</h3>${quote(r.deciding, r.verified && r.verified.deciding) || '<p class="empty">No rule quoted.</p>'}</div>
-          ${r.precedence ? `<div><h3>Why this rule wins</h3><p style="margin:0">${esc(r.precedence)}</p></div>` : ""}
-          ${(r.supporting || []).length ? `<div><h3>Other rules used</h3><div class="more-body" style="margin-top:0">${r.supporting.map((s, i) => quote(s, r.verified && r.verified.supporting[i])).join("")}</div></div>` : ""}
-          <div><h3>Numbers checked by the tool</h3><ul class="checks">${checks.map(c => `<li class="c-${c.state}">${ICON[c.state] || ICON.info}<span style="color:var(--ink)"><b>${esc(c.label)}:</b> ${esc(c.value)}</span></li>`).join("")}</ul></div>
-        </div></details>
-      </section>`;
-    }
-
-    const checkCard = ok || run ? "" : `<section class="card">
-      <h2 class="section">Your coding</h2>
-      <div class="scroll-x"><table class="coding"><thead><tr><th>Field</th><th>You entered</th></tr></thead><tbody>${rows}</tbody></table></div>
-      <div class="checkbar" style="margin-top:16px">
-        <button class="btn primary" id="check" type="button" ${state.sample ? "" : "disabled"}>Check this invoice</button>
-        <span class="hint">${state.sample === null ? "Checking needs Claude. Open this page on claude.ai to use it." : state.sample === undefined ? "Getting ready..." : "Fills the blanks and checks your entries against the grant rules. About 30 seconds."}</span>
-      </div>
+  function renderQueue() {
+    const waiting = QUEUE.filter(i => !S.results[i.id]).length;
+    return `<section class="card"><div class="queue-head"><h2>Invoices to code</h2><span class="qcount">${waiting} waiting</span></div>
+      <ul class="qlist">${QUEUE.map(i => {
+        const r = S.results[i.id], running = S.run && S.run.id === i.id;
+        const chip = running ? '<span class="chip c-run">Checking...</span>' : r ? `<span class="chip c-${esc(r.status)}">Checked: ${esc(statusText(r))}</span>` : '<span class="chip">Needs coding</span>';
+        return `<li class="qrow ${S.cur === i.id ? "current" : ""} ${S.run ? "locked" : ""}" draggable="${S.run ? "false" : "true"}" data-id="${i.id}" tabindex="0" role="button" aria-label="Check ${esc(i.vendor)}, ${money(i.amount)}">
+          <div class="qtop"><span>${esc(i.vendor)}</span><span class="num">${money(i.amount)}</span></div>
+          <div class="qdesc">${esc(i.description)}</div>
+          <div class="qmeta"><span>${esc(i.site)} site</span><span>${esc(i.id)}</span>${chip}</div></li>`;
+      }).join("")}</ul>
+      <p class="qhint">Drag an invoice into the check, or click it.</p>
     </section>`;
-
-    $("#analyst").innerHTML = `
-      <div class="stepper">
-        <span class="pos">Invoice <b class="num">${state.idx + 1}</b> of <span class="num">${INVOICES.length}</span></span>
-        <button class="btn secondary small" id="prev" type="button" ${state.idx === 0 ? "disabled" : ""} aria-label="Previous invoice">${ICON.prev}</button>
-        <label class="sr" for="pick" style="position:absolute;left:-9999px">Choose an invoice</label>
-        <select id="pick">${options}</select>
-        <button class="btn secondary small" id="next" type="button" ${state.idx === INVOICES.length - 1 ? "disabled" : ""} aria-label="Next invoice">${ICON.chev}</button>
-      </div>
-      <section class="card">
-        <div class="invoice-top"><p class="vendor">${esc(inv.vendor)}</p><span class="amount num">${money(inv.amount)}</span></div>
-        <p class="desc">${esc(inv.description)}</p>
-        <dl class="facts">
-          <div><dt>Site</dt><dd>${esc(inv.site)}</dd></div>
-          <div><dt>Pay to</dt><dd>${esc(inv.payee)}</dd></div>
-          <div><dt>Participant</dt><dd>${inv.client ? esc(inv.client) : "None"}</dd></div>
-          <div><dt>Invoice date</dt><dd class="num">${new Date(inv.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</dd></div>
-        </dl>
-        <div class="docs" aria-label="Paperwork in the packet">${req.map(d => inv.backup.includes(d) ? `<span class="doc">${ICON.doc}${d}</span>` : `<span class="doc miss">${ICON.miss}Missing: ${d}</span>`).join("")}</div>
-      </section>
-      ${checkCard}
-      ${answer}`;
-
-    const on = (id, ev, fn) => { const el = $("#" + id); if (el) el.addEventListener(ev, fn); };
-    const go = n => { state.idx = n; state.asking = false; save(); render(); };
-    on("prev", "click", () => go(state.idx - 1));
-    on("next", "click", () => go(state.idx + 1));
-    on("pick", "change", e => go(Number(e.target.value)));
-    on("check", "click", () => runCheck(inv));
-    on("recheck", "click", () => runCheck(inv, { fresh: true }));
-    on("stop", "click", () => run && run.ctl.abort());
-    on("accept", "click", () => { state.decisions[inv.id] = { kind: "accepted", coding: sug }; save(); render(); });
-    on("ask", "click", () => { state.asking = true; render(); const t = $("#ask-q"); if (t) t.focus(); });
-    on("cancel-ask", "click", () => { state.asking = false; render(); });
-    on("send", "click", () => { const q = ($("#ask-q").value || "").trim() || "Please review the coding on this invoice."; state.decisions[inv.id] = { kind: "suspense", question: q }; state.asking = false; save(); render(); });
-    on("undo", "click", () => { delete state.decisions[inv.id]; save(); render(); });
   }
-
-  // ---------- Reviewer view ----------
-  function renderReviewer() {
-    const tabs = [["evalruns", "Evals"], ["finance", "Questions for finance"], ["rules", "Rule documents"]];
-    let body = "";
-    if (state.tab === "evalruns") {
-      body = renderEvalRuns();
-    } else if (state.tab === "finance") {
-      const items = INVOICES.filter(i => state.decisions[i.id] && state.decisions[i.id].kind === "suspense");
-      body = `<section class="card"><h2 class="section">Questions for finance</h2>${items.length ? `<div class="scroll-x"><table class="tbl"><thead><tr><th>Invoice</th><th>Site</th><th>Amount</th><th>Question</th></tr></thead><tbody>${items.map(i => `<tr><td class="num">${i.id}</td><td>${i.site}</td><td class="num">${money(i.amount)}</td><td>${esc(state.decisions[i.id].question)}</td></tr>`).join("")}</tbody></table></div>` : '<p class="empty" style="margin:0">No questions yet. When an analyst presses Ask finance and saves a question, it shows up here. In this prototype nothing is sent anywhere.</p>'}</section>`;
-    } else {
-      const order = ["FIN-07", "2CFR200", "38CFR62", "24CFR578", "CHF", "RIDGE"];
-      body = `<section class="card rulebook"><h2 class="section">Rule documents</h2>
-        <p style="margin-top:0;max-width:65ch">No federal document says which rule wins when they disagree, so finance has to write that order down. FIN-07 is a draft written for this prototype. The order it sets:</p>
-        <ol class="order-list"><li>Federal program rules and 2 CFR 200</li><li>The federal award terms and budget</li><li>The local funder's agreement</li><li>The private funder's letter</li></ol>
-        ${order.map(id => { const d = DOCS[id]; return `<details ${id === "FIN-07" ? "open" : ""}><summary>${esc(d.title)}${d.fake ? '<span class="tag-fake">Fake</span>' : ""}</summary><div class="body">${d.src ? `<p><a href="${d.src}" target="_blank" rel="noopener">Official text on eCFR</a></p>` : ""}${d.sections.map(s => `<h4>${esc(s.head)}</h4>${s.paras.map(p => `<p>${esc(p)}</p>`).join("")}`).join("")}</div></details>`; }).join("")}
-      </section>`;
-    }
-    $("#reviewer").innerHTML = `<div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" type="button" data-tab="${k}" aria-selected="${state.tab === k}">${l}${k === "finance" ? ` (${INVOICES.filter(i => state.decisions[i.id] && state.decisions[i.id].kind === "suspense").length})` : ""}</button>`).join("")}</div>${body}`;
-    document.querySelectorAll("#reviewer .tabs button").forEach(b => b.addEventListener("click", () => { state.tab = b.dataset.tab; render(); }));
-    const on = (id, fn) => { const el = $("#" + id); if (el) el.addEventListener("click", fn); };
-    bindEvalRuns();
-    on("eval-run", runEvals);
-    on("p-make", () => {
-      const seed = ($("#p-seed").value || "").trim(); const n = Number($("#p-n").value) || 5;
-      if (!seed) { const m = $("#p-msg"); if (m) m.textContent = "Type a seed first."; $("#p-seed").focus(); return; }
-      state.practice = { seed, n, results: {} }; savePractice(); render();
-    });
-    on("p-run", runPractice);
-    on("p-stop", () => { if (state.practiceRun) state.practiceRun.stop = true; render(); });
-    on("p-clear", () => { state.practice = null; savePractice(); render(); });
-    on("p-copy", async () => {
-      const invs = practiceInvoices(); const rs = invs.map(i => state.practice.results[i.id]).filter(r => r && r.status);
-      const sc = invs.filter(i => state.practice.results[i.id] && state.practice.results[i.id].status).map(i => scoreResult(i, state.practice.results[i.id]));
-      const c = k => sc.filter(x => x[k]).length;
-      const txt = `Practice run: ${rs.length} of ${invs.length} checked. Right answer ${c("status")}/${sc.length}, right fund ${c("fund")}/${sc.length}, right rule ${c("cite")}/${sc.length}, quotes match ${rs.filter(r => r.verified && r.verified.deciding).length}/${rs.length}.`;
-      const m = $("#p-msg");
-      try { await navigator.clipboard.writeText(txt); if (m) m.textContent = "Scores copied. The seed and invoices were not included."; } catch { if (m) m.textContent = txt; }
-    });
-    on("eval-stop", () => { if (state.evalRun) state.evalRun.stop = true; render(); });
-    on("eval-clear", () => { state.results = {}; state.decisions = {}; save(); render(); });
-  }
-
-  async function runEvals() {
-    const list = INVOICES.filter(i => !(state.results[i.id] && state.results[i.id].status));
-    if (!list.length) return;
-    state.evalRun = { list, i: 0, stop: false };
-    for (let i = 0; i < list.length; i++) {
-      if (!state.evalRun || state.evalRun.stop || !state.sample) break;
-      state.evalRun.i = i;
-      await runCheck(list[i]);
-      const r = state.results[list[i].id];
-      if (r && r.error && /Too many|isn't allowed|isn't available|Sign in/.test(r.error)) break;
-    }
-    state.evalRun = null;
-    render();
-  }
-
-  // ================= Eval runs =================
-  const tag = str => { let h = 0; for (const c of String(str)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h.toString(36).slice(-4).toUpperCase(); };
-  const saveRuns = () => store.set("gcc.runs", state.runs.slice(-20));
-  const runCases = run => run.set === "core" ? INVOICES : generatePractice(run.seed, run.n);
-  const cellOf = v => v === true ? '<td class="cell-y">Yes</td>' : v === false ? '<td class="cell-n">No</td>' : '<td class="cell-na">–</td>';
-  const judgeVal = (c, id) => c.judge && c.judge[id] ? (c.judge[id].verdict === "yes" ? true : c.judge[id].verdict === "no" ? false : null) : null;
-  const casePass = c => c.out && CODE_CHECKS.filter(k => k.critical).every(k => c.checks[k.id]);
-
-  function runSummary(run) {
-    const cs = run.cases.filter(c => c.out);
-    const per = {};
-    for (const k of CODE_CHECKS) per[k.id] = { y: cs.filter(c => c.checks[k.id] === true).length, n: cs.length };
-    for (const j of JUDGE_CHECKS) { const v = cs.map(c => judgeVal(c, j.id)).filter(x => x !== null); per[j.id] = { y: v.filter(Boolean).length, n: v.length }; }
-    const labeled = cs.flatMap(c => JUDGE_CHECKS.map(j => [judgeVal(c, j.id), c.labels && c.labels[j.id]]).filter(([jv, lv]) => jv !== null && lv !== undefined));
-    const agree = labeled.filter(([jv, lv]) => jv === lv).length;
-    return { done: cs.length, total: run.n, pass: cs.filter(casePass).length, per, labeled: labeled.length, agree };
-  }
-
-  function renderEvalRuns() {
-    const F = state.evalForm, busy = state.evalBusy;
-    const heldUsed = state.runs.filter(r => r.type === "heldout" && r.set === "random").map(r => r.seedTag);
-    const runs = state.runs.slice().reverse();
-    const open = state.runs.find(r => r.id === state.openRun);
-    const seedHint = '<div class="privacy">' + ICON.lock + '<span>Seeds, invoices, answers and results stay in this browser. Nothing goes to the person or Claude session that built this page. Share scores only, and never paste a seed into a chat.</span></div>';
-    let html = `<section class="card">
-      <h2 class="section">Evals</h2>
-      <p class="note" style="margin-top:0">Runs a set of invoices through the checker, grades each answer, and keeps every answer and its steps so you can see why it missed. Use <b>Tuning</b> runs while improving the tool. Save one seed for a <b>Held-out final</b> run, and use it once.</p>
-      ${seedHint}
-      <div class="setup">
-        <div class="field"><label for="ev-set">Invoices</label><select id="ev-set" ${busy ? "disabled" : ""}><option value="core" ${F.set === "core" ? "selected" : ""}>Core 15 (hand-written)</option><option value="random" ${F.set === "random" ? "selected" : ""}>Random from a seed</option></select></div>
-        ${F.set === "random" ? `<div class="field"><label for="ev-seed">Seed</label><input id="ev-seed" type="password" autocomplete="off" spellcheck="false" ${busy ? "disabled" : ""}></div>
-        <div class="field"><label for="ev-n">How many</label><select id="ev-n" ${busy ? "disabled" : ""}>${[5, 10, 25].map(v => `<option ${F.n === v ? "selected" : ""}>${v}</option>`).join("")}</select></div>` : ""}
-        <div class="field"><label for="ev-type">Run type</label><select id="ev-type" ${busy ? "disabled" : ""}><option value="tuning" ${F.type === "tuning" ? "selected" : ""}>Tuning</option><option value="heldout" ${F.type === "heldout" ? "selected" : ""}>Held-out final</option></select></div>
-        <div class="field"><label for="ev-mode">Check style</label><select id="ev-mode" ${busy ? "disabled" : ""}><option value="quick" ${F.mode === "quick" ? "selected" : ""}>Quick (about 30 s each)</option><option value="tools" ${F.mode === "tools" ? "selected" : ""} ${state.tools ? "" : "disabled"}>Step by step (1 to 2 min each)</option></select></div>
-      </div>
-      <div class="actions" style="margin:0 0 6px">
-        <label class="check-row"><input type="checkbox" id="ev-judge" ${F.judge ? "checked" : ""} ${busy ? "disabled" : ""}> Also grade wording with a second Claude (adds a short call per invoice)</label>
-      </div>
-      <div class="actions" style="margin:6px 0 0">
-        <button class="btn primary" id="ev-start" type="button" ${!state.sample || busy ? "disabled" : ""}>${busy ? `Checking ${busy.i + 1} of ${busy.total}${busy.phase === "judge" ? " (grading wording)" : ""}...` : "Start run"}</button>
-        ${busy ? '<button class="btn secondary" id="ev-stop" type="button">Stop after this one</button>' : ""}
-        <span class="hint" id="ev-msg">${state.sample ? "" : "Running needs Claude. Open this page on claude.ai."}</span>
-      </div>
-    </section>`;
-
-    html += `<section class="card"><h2 class="section">Run history</h2>${runs.length ? `<div class="scroll-x"><table class="tbl"><thead><tr><th>Run</th><th>Invoices</th><th>Type</th><th>Style</th><th>Passed</th><th>Answer</th><th>Fund</th><th>Quote</th><th></th></tr></thead><tbody>
-      ${runs.map(r => { const S = runSummary(r); return `<tr><td>${new Date(r.startedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}<div class="reason">Prompt ${esc(r.promptVersion)}</div></td>
-        <td>${r.set === "core" ? "Core 15" : `Random · seed ${r.seedTag}`}<div class="reason">${S.done} of ${S.total} checked${r.status === "stopped" ? ", stopped" : ""}</div></td>
-        <td>${r.type === "heldout" ? "<b>Held-out</b>" : "Tuning"}</td><td>${r.mode === "tools" ? "Step by step" : "Quick"}</td>
-        <td class="num"><b>${S.pass} of ${S.done}</b></td><td class="num">${S.per.C1.y}/${S.per.C1.n}</td><td class="num">${S.per.C2.y}/${S.per.C2.n}</td><td class="num">${S.per.C4.y}/${S.per.C4.n}</td>
-        <td><button class="btn secondary small" data-open-run="${r.id}" type="button">${state.openRun === r.id ? "Showing" : "Open"}</button></td></tr>`; }).join("")}
-      </tbody></table></div><p class="note" style="margin:10px 0 0">"Passed" means right answer, right fund and a quote found in the rule text, all three. Seed codes are short tags so you can tell sets apart without showing the seed.</p>` : '<p class="empty" style="margin:0">No runs yet. Start one above.</p>'}</section>`;
-
-    if (open) html += renderRunDetail(open);
-    return html;
-  }
-
-  function renderRunDetail(run) {
-    const S = runSummary(run);
-    const sel = run.cases.find(c => c.id === state.openCase);
-    const cols = [...CODE_CHECKS, ...(run.judge ? JUDGE_CHECKS : [])];
-    let h = `<section class="card"><h2 class="section">Run details</h2>
-      <p class="scoreline">${S.pass} of ${S.done} invoices passed. ${CODE_CHECKS.map(k => `${k.label}: ${S.per[k.id].y} of ${S.per[k.id].n}`).join(". ")}.${run.judge ? ` Wording, graded by a second Claude: ${JUDGE_CHECKS.map(j => `${j.label.toLowerCase()} ${S.per[j.id].y} of ${S.per[j.id].n}`).join(", ")}.` : ""}${S.labeled ? ` You agreed with the wording grader on ${S.agree} of ${S.labeled} labels.` : ""}</p>
-      <div class="actions" style="margin:0 0 14px"><button class="btn secondary small" id="ev-copy" type="button">Copy report</button><button class="btn secondary small" id="ev-findings" type="button">Copy findings.md</button><button class="btn secondary small" id="ev-del" type="button">Delete run</button><span class="hint" id="ev-copymsg"></span></div>
-      <div class="scroll-x"><table class="tbl matrix"><thead><tr><th>Invoice</th><th>Case</th>${cols.map(k => `<th title="${esc(k.label)}">${k.id}${k.critical ? '<span class="crit">*</span>' : ""}</th>`).join("")}</tr></thead><tbody>
-      ${run.cases.map(c => `<tr class="pick ${sel && sel.id === c.id ? "sel" : ""}" data-case="${c.id}" tabindex="0"><td class="num">${c.id}${c.out ? (casePass(c) ? "" : ' <span class="cell-n">miss</span>') : ""}</td><td style="text-align:left">${esc(c.caseLabel)}</td>
-        ${c.out ? CODE_CHECKS.map(k => cellOf(c.checks[k.id])).join("") + (run.judge ? JUDGE_CHECKS.map(j => cellOf(judgeVal(c, j.id))).join("") : "") : `<td colspan="${cols.length}" class="cell-na">${c.error ? esc(c.error) : "Not run"}</td>`}</tr>`).join("")}
-      </tbody></table></div>
-      <p class="note" style="margin:8px 0 0">${cols.map(k => `${k.id} ${k.label}`).join(" · ")}. * sinks the whole invoice. Select a row to see the answer, its steps and the grader's reasons.</p>`;
-    if (sel) {
-      const inv = runCases(run).find(i => i.id === sel.id);
-      const o = sel.out || {};
-      h += `<div class="casebox">
-        <h3>${sel.id} · ${esc(sel.caseLabel)}</h3>
-        <dl class="kv2"><dt>Invoice</dt><dd>${esc(inv.vendor)}, ${money(inv.amount)}, ${esc(inv.description)} (${inv.site})</dd>
-          <dt>Expected</dt><dd>${inv.expected.status.map(x => WORDS[x]).join(" or ")}; ${inv.expected.fund.map(f => f ? fundLabel(f) : "no fund").join(" or ")}</dd>
-          <dt>Got</dt><dd>${o.status ? `${WORDS[o.status] || esc(o.status)}; ${o.suggested && o.suggested.fund ? fundLabel(o.suggested.fund) : "no fund"}; rule ${esc(o.deciding && o.deciding.section || "none")}` : esc(sel.error || "Not run")}</dd>
-          ${o.summary ? `<dt>Summary</dt><dd>${esc(o.summary)}</dd>` : ""}${o.explain ? `<dt>Explanation</dt><dd>${esc(o.explain)}</dd>` : ""}${o.question ? `<dt>Question</dt><dd>${esc(o.question)}</dd>` : ""}</dl>
-        ${run.judge && sel.judge ? `<div><h3 style="font-size:14px;margin-bottom:6px">Wording grader (label each to build the golden set)</h3><ul class="judge-list">${JUDGE_CHECKS.map(j => { const jv = judgeVal(sel, j.id); const lv = sel.labels && sel.labels[j.id]; return `<li><b>${j.id} ${esc(j.label)}:</b> ${jv === null ? "n/a" : jv ? '<span class="cell-y">yes</span>' : '<span class="cell-n">no</span>'} — ${esc(sel.judge[j.id] && sel.judge[j.id].why || "")}${jv === null ? "" : `<span class="lbl" role="group" aria-label="Your label for ${j.id}"><button type="button" data-label="${j.id}" data-v="1" aria-pressed="${lv === true}">Should be yes</button><button type="button" data-label="${j.id}" data-v="0" aria-pressed="${lv === false}">Should be no</button></span>`}</li>`; }).join("")}</ul></div>` : ""}
-        ${o.trace && o.trace.length ? `<details class="trace-wrap" style="margin-top:0;border-top:0;padding-top:0"><summary>${ICON.chev}Steps (${o.trace.length})</summary><ol class="trace">${traceItems(o.trace)}</ol></details>` : ""}
-        ${sel.out && !casePass(sel) || (sel.out && Object.values(sel.checks).includes(false)) ? `<div class="field"><label for="ev-diag">Why did it miss? Check in this order: answer key, data, context, prompt, model.</label>
-          <select id="ev-diag"><option value="">Not diagnosed yet</option>${DIAG_BUCKETS.map(([k, l]) => `<option value="${k}" ${sel.diag && sel.diag.bucket === k ? "selected" : ""}>${l}</option>`).join("")}</select>
-          <label for="ev-note" style="margin-top:6px">One change to try, and the trace line that shows it</label><textarea id="ev-note">${esc(sel.diag && sel.diag.note || "")}</textarea>
-          <div class="actions" style="margin-top:6px"><button class="btn secondary small" id="ev-savediag" type="button">Save diagnosis</button></div></div>` : ""}
-      </div>`;
-    }
-    return h + "</section>";
-  }
-
-  function bindEvalRuns() {
-    const on = (id, ev, fn) => { const el = $("#" + id); if (el) el.addEventListener(ev, fn); };
-    const F = state.evalForm;
-    on("ev-set", "change", e => { F.set = e.target.value; render(); });
-    on("ev-n", "change", e => { F.n = Number(e.target.value); });
-    on("ev-type", "change", e => { F.type = e.target.value; });
-    on("ev-mode", "change", e => { F.mode = e.target.value; });
-    on("ev-judge", "change", e => { F.judge = e.target.checked; });
-    on("ev-start", "click", startRun);
-    on("ev-stop", "click", () => { if (state.evalBusy) state.evalBusy.stop = true; render(); });
-    document.querySelectorAll("[data-open-run]").forEach(b => b.addEventListener("click", () => { state.openRun = b.dataset.openRun; state.openCase = null; render(); }));
-    document.querySelectorAll("tr[data-case]").forEach(tr => { const go = () => { state.openCase = tr.dataset.case; render(); }; tr.addEventListener("click", go); tr.addEventListener("keydown", e => { if (e.key === "Enter") go(); }); });
-    const run = state.runs.find(r => r.id === state.openRun);
-    const c = run && run.cases.find(x => x.id === state.openCase);
-    document.querySelectorAll("[data-label]").forEach(b => b.addEventListener("click", () => { c.labels = c.labels || {}; const v = b.dataset.v === "1"; c.labels[b.dataset.label] = c.labels[b.dataset.label] === v ? undefined : v; saveRuns(); render(); }));
-    on("ev-savediag", "click", () => { c.diag = { bucket: $("#ev-diag").value, note: $("#ev-note").value.trim() }; saveRuns(); const m = $("#ev-copymsg"); render(); });
-    on("ev-del", "click", () => { state.runs = state.runs.filter(r => r.id !== state.openRun); state.openRun = null; saveRuns(); render(); });
-    const copy = async (txt, ok) => { const m = $("#ev-copymsg"); try { await navigator.clipboard.writeText(txt); if (m) m.textContent = ok; } catch { if (m) m.textContent = "Copy blocked here. Select the text below instead."; const pre = document.createElement("pre"); pre.textContent = txt; pre.style.whiteSpace = "pre-wrap"; m.after(pre); } };
-    on("ev-copy", "click", () => copy(reportText(run), "Report copied. It has scores and case types only, no seed and no invoice details."));
-    on("ev-findings", "click", () => copy(findingsText(run), "findings.md copied."));
-  }
-
-  function reportText(run) {
-    const S = runSummary(run);
-    const lines = [`# Eval run, ${new Date(run.startedAt).toLocaleString("en-US")}`, "", `- Invoices: ${run.set === "core" ? "Core 15" : `Random set, seed tag ${run.seedTag}`} (${S.done} of ${S.total} checked)`, `- Run type: ${run.type === "heldout" ? "Held-out final" : "Tuning"}`, `- Check style: ${run.mode === "tools" ? "Step by step" : "Quick"}`, `- Prompt: ${run.promptVersion}`, `- Passed (answer, fund and quote all right): ${S.pass} of ${S.done}`, "", "| Check | Passed |", "|---|---|"];
-    for (const k of [...CODE_CHECKS, ...(run.judge ? JUDGE_CHECKS : [])]) lines.push(`| ${k.id} ${k.label} | ${S.per[k.id].y} of ${S.per[k.id].n} |`);
-    if (S.labeled) lines.push("", `Wording grader agreement with human labels: ${S.agree} of ${S.labeled}.`);
-    const misses = run.cases.filter(c => c.out && !casePass(c));
-    lines.push("", `## Misses (${misses.length})`, "");
-    for (const c of misses) lines.push(`- ${c.id}, ${c.caseLabel}: failed ${CODE_CHECKS.filter(k => c.checks[k.id] === false).map(k => k.id).join(", ")}${c.diag && c.diag.bucket ? `; diagnosed: ${c.diag.bucket}` : ""}`);
-    return lines.join("\n");
-  }
-  function findingsText(run) {
-    const diag = run.cases.filter(c => c.diag && c.diag.bucket);
-    const lines = [`# findings.md`, "", `Run ${new Date(run.startedAt).toLocaleString("en-US")}, prompt ${run.promptVersion}. One change per round; rerun the same set and keep the change only if more pass and nothing that passed before fails.`, ""];
-    if (!diag.length) lines.push("No misses diagnosed yet.");
-    for (const c of diag) lines.push(`## ${c.id}, ${c.caseLabel}`, `- Failed: ${Object.entries(c.checks).filter(([, v]) => v === false).map(([k]) => k).join(", ") || "none"}`, `- Bucket: ${c.diag.bucket}`, `- Change and evidence: ${c.diag.note || "(not written)"}`, "");
-    return lines.join("\n");
-  }
-
-  async function evalOne(inv, mode, signal) {
-    const trace = [];
-    const log = e => { const i = trace.findIndex(x => x.id === e.id); if (i >= 0) trace[i] = { ...trace[i], ...e }; else trace.push(e); };
-    log({ id: "start", kind: "start", title: `Reading the invoice: ${inv.vendor}, ${money(inv.amount)}`, detail: inv.description, state: "done" });
-    let r;
-    if (mode === "tools") r = await state.sample.json(buildToolPrompt(inv, DOCS), { signal, tools: makeTools(inv, DOCS, log) });
-    else { oneShotSteps(inv).forEach((st, n) => log({ id: "pre" + n, ...st })); r = await state.sample.json(buildPrompt(inv, DOCS), { signal, cache: false }); log({ id: "think", kind: "write", title: "Claude read the rules and wrote the answer", detail: "", state: "done" }); }
-    if (!r || typeof r !== "object" || !r.status) throw { code: "invalid_json" };
-    r.trace = trace.map(({ fresh, ...e }) => e);
-    return r;
-  }
-
-  async function startRun() {
-    const F = state.evalForm;
-    let seed = null;
-    if (F.set === "random") { seed = ($("#ev-seed").value || "").trim(); if (!seed) { $("#ev-msg").textContent = "Type a seed first."; $("#ev-seed").focus(); return; } }
-    const seedTag = seed ? tag(seed) : null;
-    if (F.type === "heldout" && F.set === "random" && state.runs.some(r => r.type === "heldout" && r.seedTag === seedTag)) { $("#ev-msg").textContent = "This seed was already used for a held-out run. A second run on it isn't a clean held-out test. Pick a new seed."; return; }
-    if (F.type === "heldout" && F.set === "random" && state.runs.some(r => r.type === "tuning" && r.seedTag === seedTag)) { $("#ev-msg").textContent = "This seed was used for tuning, so it can't be held out. Pick a new seed."; return; }
-    const n = F.set === "core" ? INVOICES.length : F.n;
-    const run = { id: "run" + Date.now(), startedAt: new Date().toISOString(), set: F.set, seed, seedTag, n, type: F.type, mode: F.mode, judge: F.judge, promptVersion: PROMPT_VERSION, status: "running", cases: [] };
-    const invs = F.set === "core" ? INVOICES : generatePractice(seed, n);
-    run.cases = invs.map(i => ({ id: i.id, caseLabel: i.caseLabel || i.why, checks: {}, out: null }));
-    state.runs.push(run); state.openRun = run.id; state.openCase = null;
-    state.evalBusy = { i: 0, total: n, stop: false, phase: "check" };
-    saveRuns(); render();
-    for (let i = 0; i < invs.length; i++) {
-      if (state.evalBusy.stop || !state.sample) { run.status = "stopped"; break; }
-      state.evalBusy.i = i; state.evalBusy.phase = "check"; render();
-      const inv = invs[i], c = run.cases[i], ctl = new AbortController();
-      try {
-        const out = await evalOne(inv, run.mode, ctl.signal);
-        c.out = out; c.checks = codeChecks(inv, out, DOCS);
-        if (run.judge) {
-          state.evalBusy.phase = "judge"; render();
-          try { c.judge = await state.sample.json(buildJudgePrompt(inv, out), { cache: false }); } catch (e) { c.judge = null; }
-        }
-      } catch (e) {
-        c.error = (e && ERR[e.code]) || "Failed";
-        if (e && (e.code === "rate_limited" || e.code === "not_granted" || e.code === "sampling_disabled")) { if (e.code !== "rate_limited") state.sample = null; run.status = "stopped"; saveRuns(); break; }
-      }
-      saveRuns();
-    }
-    if (run.status === "running") run.status = "done";
-    state.evalBusy = null; saveRuns(); render();
-  }
-
-  let practiceCache = null;
-  function practiceInvoices() {
-    const P = state.practice; if (!P) return [];
-    if (!practiceCache || practiceCache.key !== P.seed + "|" + P.n) practiceCache = { key: P.seed + "|" + P.n, list: generatePractice(P.seed, P.n) };
-    return practiceCache.list;
-  }
-  function savePractice() {
-    if (!state.practice) { store.set("gcc.practice", null); return; }
-    const results = Object.fromEntries(Object.entries(state.practice.results).map(([k, v]) => { const { fresh, trace, ...rest } = v || {}; return [k, rest]; }));
-    store.set("gcc.practice", { ...state.practice, results });
-  }
-  async function runPractice() {
-    const invs = practiceInvoices();
-    const list = invs.filter(i => !(state.practice.results[i.id] && state.practice.results[i.id].status));
-    if (!list.length || !state.sample) return;
-    state.practiceRun = { list, i: 0, stop: false };
-    for (let i = 0; i < list.length; i++) {
-      if (!state.practiceRun || state.practiceRun.stop || !state.sample || !state.practice) break;
-      state.practiceRun.i = i; render();
-      const inv = list[i]; const ctl = new AbortController();
-      state.running[inv.id] = { ctl, trace: [], t0: Date.now(), mode: "oneshot" };
-      render();
-      try {
-        const r = await state.sample.json(buildPrompt(inv, DOCS), { signal: ctl.signal });
-        if (!r || typeof r !== "object" || !r.status) throw { code: "invalid_json" };
-        r.verified = { deciding: verifyQuote(r.deciding, DOCS), supporting: (r.supporting || []).map(q => verifyQuote(q, DOCS)) };
-        if (state.practice) state.practice.results[inv.id] = r;
-      } catch (e) {
-        if (state.practice && e && e.code !== "cancelled") state.practice.results[inv.id] = { error: ERR[e && e.code] || "Failed" };
-        if (e && (e.code === "rate_limited" || e.code === "not_granted" || e.code === "sampling_disabled")) { if (e.code !== "rate_limited") state.sample = null; delete state.running[inv.id]; break; }
-      } finally { delete state.running[inv.id]; savePractice(); }
-    }
-    state.practiceRun = null;
-    render();
-  }
-
-  $("#toggle-view").addEventListener("click", () => {
-    state.view = state.view === "analyst" ? "reviewer" : "analyst";
-    $("#toggle-view").textContent = state.view === "analyst" ? "Reviewer tools" : "Back to invoices";
-    render();
-  });
 
   function render() {
-    $("#analyst").hidden = state.view !== "analyst";
-    $("#reviewer").hidden = state.view !== "reviewer";
-    if (state.view === "analyst") renderAnalyst(); else renderReviewer();
-    for (const r of Object.values(state.results)) if (r && r.fresh) delete r.fresh;
+    const INV = curInv();
+    const html = INV ? renderTool(INV) : `<div class="drop" id="drop">${'<div>' + svg('<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/>') + '<b>Drop an invoice here</b>Grant Coding Check reads the invoice, the veteran\'s history and the grant rules, then suggests the coding.</div>'}</div>`;
+    $("#app").innerHTML = `<div class="col">${renderQueue()}</div><div class="col tool" id="tool">${html}</div>`;
+    bind();
+  }
+
+  function bind() {
+    document.querySelectorAll(".qrow").forEach(row => {
+      const id = row.dataset.id;
+      row.addEventListener("click", () => open(id));
+      row.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(id); } });
+      row.addEventListener("dragstart", e => { if (S.run) { e.preventDefault(); return; } S.drag = id; row.classList.add("dragging"); try { e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move"; } catch {} });
+      row.addEventListener("dragend", () => { S.drag = null; row.classList.remove("dragging"); const t = $("#tool"); if (t) t.classList.remove("over"); });
+    });
+    const tool = $("#tool");
+    tool.addEventListener("dragover", e => { if (!S.drag || S.run) return; e.preventDefault(); tool.classList.add("over"); });
+    tool.addEventListener("dragleave", e => { if (!tool.contains(e.relatedTarget)) tool.classList.remove("over"); });
+    tool.addEventListener("drop", e => { e.preventDefault(); tool.classList.remove("over"); let id = S.drag; try { id = e.dataTransfer.getData("text/plain") || id; } catch {} if (id && QUEUE.some(i => i.id === id)) open(id); });
+    const b = $("#go"); if (b) b.addEventListener("click", check);
+    const x = $("#reset"); if (x) x.addEventListener("click", () => { S.results = {}; S.cur = null; S.error = null; try { localStorage.removeItem(KEY); } catch {} render(); window.scrollTo(0, 0); });
+  }
+
+  function renderTool(INV) {
+    const r = S.results[INV.id], sug = r && r.suggested ? r.suggested : null;
+    const rows = Object.keys(FIELDS).map(k => {
+      const entered = INV.analyst[k], sv = sug ? (sug[k] ?? null) : undefined, changed = sug && String(sv ?? "") !== String(entered ?? "");
+      const ent = entered ? `<span class="${changed ? "was" : ""}">${esc(label(k, entered))}</span>` : '<span class="blank">Left blank</span>';
+      return `<tr><th scope="row">${FIELDS[k]}</th><td>${ent}</td>${sug ? `<td><span class="use ${changed ? "changed" : ""}">${esc(sv ? label(k, sv) : k === "fund" ? "No grant can pay" : "None")}</span></td>` : ""}</tr>`;
+    }).join("");
+    const date = new Date(INV.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+    let html = `<section class="card">
+      <div class="inv-top"><p class="vendor">${esc(INV.vendor)}</p><span class="amount num">${money(INV.amount)}</span></div>
+      <p class="desc">${esc(INV.description)}</p>
+      <dl class="facts"><div><dt>Site</dt><dd>${esc(INV.site)}</dd></div><div><dt>Pay to</dt><dd>${esc(INV.payee)}</dd></div><div><dt>Veteran</dt><dd>${INV.client ? esc(INV.client) : "None"}</dd></div><div><dt>Invoice date</dt><dd class="num">${date}</dd></div></dl>
+      <h2>${sug ? "Coding" : "Analyst's coding"}</h2>
+      <table class="coding"><thead><tr><th>Field</th><th>Analyst entered</th>${sug ? "<th>Check suggests</th>" : ""}</tr></thead><tbody>${rows}</tbody></table>
+      <div class="go">
+        <button class="btn${r && !S.run ? " quiet" : ""}" id="go" type="button" ${S.sample && !S.run ? "" : "disabled"}>${S.run ? "Checking..." : r ? "Run again" : "Run grant check"}</button>
+        ${!S.run && (Object.keys(S.results).length || S.error) ? '<button class="btn quiet" id="reset" type="button">Reset demo</button>' : ""}
+        ${S.sample === null ? '<span class="hint">Open this page on claude.ai to run the check.</span>' : S.sample === undefined ? '<span class="hint">Getting ready...</span>' : ""}
+      </div>
+    </section>`;
+
+    const live = S.run && S.run.id === INV.id;
+    const trace = live ? S.run.trace : r && r.trace;
+    if (live || (trace && trace.length)) html += `<section class="card"><h2>What the check looked at</h2><div class="tlegend">${["rule","vet","check","claude","pivot"].map(c => `<span><i style="background:var(--c-${c})"></i>${CAT_LABEL[c]}</span>`).join("")}</div><ol class="trace" id="trace" aria-live="polite">${trace.map(step).join("")}</ol>${live ? '<p class="elapsed" id="elapsed">0 seconds</p>' : r && r.seconds ? `<p class="elapsed">Took ${r.seconds} seconds</p>` : ""}</section>`;
+
+    if (S.error) html += `<section class="card"><p class="err">${esc(S.error)}${r ? " The last answer is still below." : ""}</p></section>`;
+
+    if (r && !live) {
+      const what = statusText(r);
+      const missed = Array.isArray(r.missed) ? r.missed.slice(0, 3) : [];
+      const d = r.deciding || {};
+      html += `<section class="card" aria-live="polite">
+        <div class="verdict v-${esc(r.status)}">${ICON[r.status] || ""}<div><p class="what">${esc(what)}</p><p>${esc(r.summary)}</p></div></div>
+        ${missed.length ? `<h3>What the check caught</h3><ul class="missed">${missed.map(m => `<li>${ICON.flag}<span>${esc(m)}</span></li>`).join("")}</ul>` : ""}
+        ${r.question ? `<p><b>Question for finance:</b> ${esc(r.question)}</p>` : ""}
+        ${d.quote ? `<details><summary>The rule behind this</summary><blockquote><div class="qsrc"><b>${esc(d.section || d.doc)}</b><span class="${r.verified ? "found" : "notfound"}">${r.verified ? "Matches the source text" : "Not found in the source"}</span></div>${esc(d.quote)}</blockquote>${r.precedence ? `<p class="why"><b>Why this rule wins:</b> ${esc(r.precedence)}</p>` : ""}</details>` : ""}
+      </section>`;
+    }
+
+    return html;
   }
   render();
 })();

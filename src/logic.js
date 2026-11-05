@@ -265,9 +265,9 @@ DOCUMENTS:
 ${docs}
 
 Reply with only one JSON object in this shape:
-{"status":"allowed","suggested":{"fund":"SSVF-H","category":"TFA-Rent","cost_type":"Program","service_period":"2026-11"},"summary":"One or two sentences for the analyst.","deciding":{"doc":"38CFR62","section":"38 CFR 62.34(a)(1)","quote":"exact words from the document"},"precedence":"One sentence: which document controls here and why, citing FIN-07.","supporting":[{"doc":"FIN-07","section":"FIN-07 P4","quote":"exact words"}],"flags":[{"field":"fund","entered":"","suggested":"SSVF-H","why":"short reason"}],"funds":[{"fund":"SSVF-H","verdict":"pays","why":"Under the 9-month limit."},{"fund":"CHF-H","verdict":"not_needed","why":"Federal fund pays first (FIN-07 P4)."}],"question":"","explain":"Two or three sentences for someone new to grants: what the deciding rule means in everyday words and how it led to this answer."}
+{"status":"allowed","suggested":{"fund":"SSVF-H","category":"TFA-Rent","cost_type":"Program","service_period":"2026-11"},"summary":"One sentence, under 20 words.","missed":["SSVF has already paid 6 of its 6 rent months for this veteran."],"deciding":{"doc":"38CFR62","section":"38 CFR 62.34(a)(1)","quote":"exact words from the document"},"precedence":"One sentence: which document controls here and why, citing FIN-07.","supporting":[{"doc":"FIN-07","section":"FIN-07 P4","quote":"exact words"}],"flags":[{"field":"fund","entered":"","suggested":"SSVF-H","why":"short reason"}],"funds":[{"fund":"SSVF-H","verdict":"pays","why":"Under the 9-month limit."},{"fund":"CHF-H","verdict":"not_needed","why":"Federal fund pays first (FIN-07 P4)."}],"question":"","explain":"Two or three sentences for someone new to grants: what the deciding rule means in everyday words and how it led to this answer."}
 funds lists every fund at this site, in the order given under FUNDS AT THIS SITE, with verdict "pays" (the one fund you suggest), "cannot" (its documents bar this cost or a limit is reached), "not_needed" (could pay, but FIN-07 says another fund goes first), or "unclear" (its documents do not settle it). Each why is under 12 words, plain language.
-Use null for suggested.fund and suggested.category when no fund can pay. cost_type is "Program" or "Admin". Give at most 2 supporting quotes. Put a flag only on fields the analyst left blank or got wrong. question is the specific question for finance or the case manager when status is needs_info or escalate, otherwise "".`;
+Use null for suggested.fund and suggested.category when no fund can pay. cost_type is "Program" or "Admin". Give at most 2 supporting quotes. Put a flag only on fields the analyst left blank or got wrong. missed lists up to 3 facts the analyst likely did not see or got wrong, each under 15 words, plain words, no section numbers or fund codes; [] if nothing was missed. question is the specific question for finance or the case manager when status is needs_info or escalate, otherwise "".`;
 }
 
 const norm = s => String(s || "").toLowerCase().replace(/[‘’“”"']/g, "").replace(/[^a-z0-9$%]+/g, " ").trim();
@@ -290,13 +290,21 @@ function scoreResult(inv, r) {
 
 
 // ---------- Tool-calling mode (trace) ----------
+const DOC_SOURCE = {
+  "FIN-07": "Finance policy FIN-07 (fake)",
+  "2CFR200": "2 CFR 200, eCFR",
+  "38CFR62": "38 CFR 62, eCFR",
+  "24CFR578": "24 CFR 578, eCFR",
+  "CHF": "County agreement CHF-2026-014 (fake)",
+  "RIDGE": "Ridgeline grant letter (fake)"
+};
 const DOC_PLAIN = {
-  "FIN-07": "Funding order policy (FIN-07)",
-  "2CFR200": "Federal cost rules (2 CFR 200)",
-  "38CFR62": "SSVF rules (38 CFR 62)",
-  "24CFR578": "HUD CoC rules (24 CFR 578)",
-  "CHF": "County Housing Fund agreement",
-  "RIDGE": "Ridgeline Foundation letter"
+  "FIN-07": "the funding order policy",
+  "2CFR200": "the federal cost rules",
+  "38CFR62": "the SSVF rules",
+  "24CFR578": "the HUD CoC rules",
+  "CHF": "the county fund agreement",
+  "RIDGE": "the foundation grant letter"
 };
 
 function siteDocIds(inv) {
@@ -326,32 +334,74 @@ function plainParticipant(p) {
   return bits.join(" · ");
 }
 
+// The veteran's last 12 months of SSVF payments, for the trace's month strip
+function veteranHistory(id, through, assistance) {
+  const c = CLIENTS[id];
+  if (!c) return { found: false, note: "No participant with that ID." };
+  if (c.unavailable) return { found: false, note: c.unavailable };
+  const t = mIdx(through), months = Array.from({ length: 12 }, (_, k) => monthStr(t - 11 + k));
+  const hist = assistance === "utility" ? (c.utility || []) : (c.rent || []);
+  const lim = c.tier === "Extremely low income" ? [9, 12] : [6, 10];
+  const w = windowCount(hist, through, lim[0], lim[1]);
+  return { found: true, assistance, income_level: c.tier, last_12_months: months, paid_months: months.filter(m => hist.includes(m)), this_invoice_month: through,
+    used_in_current_12_month_period: w.used12, limit_per_12_months: lim[0], used_in_current_24_month_period: w.used24, limit_per_24_months: lim[1], within_limit: w.ok, period_started: w.anchor };
+}
+function historyLine(h) {
+  if (!h.found) return h.note;
+  return `${h.used_in_current_12_month_period} of ${h.limit_per_12_months} ${h.assistance} months already paid by SSVF. This invoice would be month ${h.used_in_current_12_month_period + 1}${h.within_limit ? "." : ", over the limit."}`;
+}
+const historyKind = inv => inv.kind === "utility" ? "utility" : ["rent", "late_fee"].includes(inv.kind) ? "rent" : null;
+
 // log(event) receives {id, kind, title, detail, state} and later updates with the same id
+const fundShort = f => FUNDS[f] ? FUNDS[f].name.split(/,| \(/)[0] : String(f);
+const pastTense = t => t.replace(/^Checking/, "Checked").replace(/^Looking up/, "Looked up").replace(/^Counting/, "Counted").replace(/^Reading/, "Read");
 function makeTools(inv, DOCS, log) {
   const allowedDocs = siteDocIds(inv);
+  const read = new Set();
+  const siteFunds = SITES[inv.site].funds;
   const PAPER = ["Backup in packet", "Payee"];
-  const wrap = (kind, titleFn, fn, resultFn) => async (input) => {
+  const wrap = (kind, titleFn, fn, resultFn, srcFn, doneFn) => async (input) => {
     const id = Math.random().toString(36).slice(2);
-    log({ id, kind, title: titleFn(input), detail: "", state: "running" });
+    log({ id, kind, title: titleFn(input), source: srcFn ? srcFn(input) : "", why: String((input && input.reason) || "").slice(0, 160), detail: "", state: "running" });
     await new Promise(r => setTimeout(r, 350));
-    try { const out = fn(input); log({ id, detail: resultFn(out, input), state: "done" }); return out; }
+    try { const out = fn(input); log({ id, title: doneFn ? doneFn(out, input) : pastTense(titleFn(input)), detail: resultFn(out, input), data: kind === "history" || kind === "pivot" ? out : undefined, state: "done" }); return out; }
     catch (e) { log({ id, detail: String(e.message || e), state: "error" }); throw e; }
   };
   return [
     { name: "check_paperwork", description: "Checks which required documents are in this invoice's packet and whether the payee is a third party. Returns a list of findings. Call this once.",
-      execute: wrap("paperwork", () => "Checking the paperwork in the packet", () => computeChecks(inv).filter(c => PAPER.includes(c.label)), out => out.map(c => c.value).join(". ")) },
+      inputSchema: { type: "object", properties: { reason: { type: "string", description: "One short sentence, under 15 words, in plain words: why you are calling this now, based on the invoice and what earlier tools returned." } } },
+      execute: wrap("paperwork", () => "Checking the paperwork in the packet", () => computeChecks(inv).filter(c => PAPER.includes(c.label)), out => out.map(c => c.value).join(". "), () => "Invoice packet",
+        out => { const b = out.filter(c => c.state === "bad" || c.state === "missing"); return b.length ? `Paperwork problem: ${b.map(c => c.label.toLowerCase()).join(", ")}` : "Paperwork complete"; }) },
     { name: "look_up_participant", description: "Returns the participant's history: income level, months of SSVF rent and utility help already paid, deposits, moving costs, other housing subsidies. Call this when the invoice names a participant.",
-      inputSchema: { type: "object", properties: { participant_id: { type: "string", description: "For example C-101" } }, required: ["participant_id"] },
-      execute: wrap("person", i => `Looking up participant ${String(i.participant_id || inv.client || "")}'s history`, i => participantSummary(String(i.participant_id || inv.client || "")), out => plainParticipant(out)) },
+      inputSchema: { type: "object", properties: { participant_id: { type: "string", description: "For example C-101" }, reason: { type: "string", description: "One short sentence, under 15 words, in plain words: why you are calling this now, based on the invoice and what earlier tools returned." } }, required: ["participant_id"] },
+      execute: wrap("person", () => "Looking up the veteran's history", i => participantSummary(String(i.participant_id || inv.client || "")), out => plainParticipant(out), () => "Participant record", () => "Pulled the veteran's record") },
+    { name: "veteran_history", description: "Returns the last 12 months up to a service month, which of those months SSVF already paid for this veteran (rent or utilities), and the count against the SSVF month limit. Call this only after you have read a rule that limits months of help, and name that rule in rule_section.",
+      inputSchema: { type: "object", properties: { participant_id: { type: "string", description: "For example C-101" }, through_month: { type: "string", description: "The invoice's service month, YYYY-MM" }, assistance: { type: "string", enum: ["rent", "utility"] }, rule_section: { type: "string", description: "The section you read that sets the month limit, for example 38 CFR 62.34(a)(1)" }, reason: { type: "string", description: "One short sentence, under 15 words, in plain words: why you are calling this now, based on the invoice and what earlier tools returned." } }, required: ["participant_id", "rule_section"] },
+      execute: wrap("history", i => i.rule_section ? `Checking the last 12 months against ${String(i.rule_section).slice(0, 40)}` : "Checking the veteran's last 12 months", i => {
+        if (!read.has("38CFR62")) throw new Error("Read the rule that sets the month limit first (read_document 38CFR62), then call this.");
+        return veteranHistory(String(i.participant_id || inv.client || ""), /^\d{4}-\d{2}$/.test(String(i.through_month || "")) ? String(i.through_month) : inv.period, i.assistance === "utility" || i.assistance === "rent" ? i.assistance : (historyKind(inv) || "rent"));
+      }, out => historyLine(out), () => "SSVF payment history",
+        out => !out.found ? "No SSVF payment history for this veteran" : out.within_limit ? `Within the SSVF limit: ${out.used_in_current_12_month_period} of ${out.limit_per_12_months} ${out.assistance} months used` : `SSVF ${out.assistance} limit reached: ${out.used_in_current_12_month_period} of ${out.limit_per_12_months} months used`) },
     { name: "check_limits", description: "Runs the exact counts for this invoice: rent and utility months against the SSVF limits, deposit and moving-cost timing, dollar caps for the county fund and Ridgeline, and admin caps. Returns each check with ok, bad, missing or info. Trust these numbers over your own arithmetic.",
-      execute: wrap("count", () => "Counting months and dollar limits", () => computeChecks(inv).filter(c => !PAPER.includes(c.label)), out => out.length ? out.filter(c => c.state !== "info").map(c => `${c.label}: ${c.state === "ok" ? "OK" : c.state === "bad" ? "over the limit or not allowed" : c.state === "missing" ? "information missing" : "noted"}`).join(". ") || "Nothing to count for this invoice." : "Nothing to count for this invoice.") },
+      inputSchema: { type: "object", properties: { reason: { type: "string", description: "One short sentence, under 15 words, in plain words: why you are calling this now, based on the invoice and what earlier tools returned." } } },
+      execute: wrap("count", () => "Counting months and dollar limits", () => computeChecks(inv).filter(c => !PAPER.includes(c.label)), out => out.length ? out.filter(c => c.state !== "info").map(c => `${c.label}: ${c.state === "ok" ? "OK" : c.state === "bad" ? "over the limit" : c.state === "missing" ? "information missing" : "noted"}`).join(". ") || "Nothing to count for this invoice." : "Nothing to count for this invoice.", () => "Calculated by the page",
+        out => { const b = out.filter(c => c.state === "bad"), m = out.filter(c => c.state === "missing"); return b.length ? `Over a limit: ${b.map(c => c.label).join(", ")}` : m.length ? "Limits: information missing" : "All limits OK"; }) },
     { name: "read_document", description: `Returns the full text of one rule document so you can quote it. Documents for this site: ${allowedDocs.map(d => `${d} (${DOCS[d].title})`).join("; ")}. Read every document you quote.`,
-      inputSchema: { type: "object", properties: { doc_id: { type: "string", enum: allowedDocs } }, required: ["doc_id"] },
+      inputSchema: { type: "object", properties: { doc_id: { type: "string", enum: allowedDocs }, reason: { type: "string", description: "One short sentence, under 15 words, in plain words: why you are calling this now, based on the invoice and what earlier tools returned." } }, required: ["doc_id"] },
       execute: wrap("doc", i => `Reading ${DOC_PLAIN[String(i.doc_id)] || String(i.doc_id)}`, i => {
         const id = String(i.doc_id);
         if (!allowedDocs.includes(id)) throw new Error(`Not a document for this site. Use one of: ${allowedDocs.join(", ")}`);
+        read.add(id);
         return { doc_id: id, title: DOCS[id].title, kind: DOCS[id].fake ? "organization or funder document" : "official federal text", text: docText(DOCS[id]) };
-      }, out => { const pg = Math.max(1, Math.round(out.text.length / 2500)); return `${out.kind === "official federal text" ? "Official federal text" : "Funder or policy document (fake for this demo)"}, about ${pg} page${pg > 1 ? "s" : ""}`; }) }
+      }, out => `Got the full text: ${out.title}.`, i => DOC_SOURCE[String(i.doc_id)] || "") },
+    { name: "rule_out_fund", description: "Records that the fund you were checking cannot pay this cost, why, and which fund you will try next. Call it every time a fund turns out unable to pay, before you check the next one. Use next_fund \"none\" when no fund at this site is left to try. Returns the next fund's documents.",
+      inputSchema: { type: "object", properties: { fund: { type: "string", enum: siteFunds }, because: { type: "string", description: "Plain words, under 20 words: what you found that rules this fund out." }, next_fund: { type: "string", enum: [...siteFunds, "none"] } }, required: ["fund", "because", "next_fund"] },
+      execute: wrap("pivot", i => `Ruling out ${fundShort(i.fund)}`, i => {
+        if (!siteFunds.includes(String(i.fund))) throw new Error(`Not a fund at this site. Use one of: ${siteFunds.join(", ")}`);
+        const next = siteFunds.includes(String(i.next_fund)) ? String(i.next_fund) : "none";
+        return { ruled_out: String(i.fund), next_fund: next, next_fund_documents: next === "none" ? [] : FUNDS[next].docs };
+      }, (out, i) => String(i.because || "").slice(0, 200), () => "",
+        (out) => out.next_fund === "none" ? `${fundShort(out.ruled_out)} can't pay. No fund left to try` : `${fundShort(out.ruled_out)} can't pay. Pivoting to ${fundShort(out.next_fund)}`) }
   ];
 }
 
@@ -363,10 +413,13 @@ function buildToolPrompt(inv, DOCS) {
   const shape = oneShot.slice(oneShot.indexOf("Reply with only one JSON object"));
   return `You check the grant coding on one invoice for a nonprofit that serves homeless veterans. A site budget analyst filled in some coding fields and left others blank. Decide which fund can pay this cost and how to code it.
 
-Work with the tools. Call several at once when you can, and finish in at most three rounds:
-- Call check_paperwork and check_limits.
-- Call look_up_participant if the invoice names a participant.
-- Call read_document for policy FIN-07 and for every other document you will quote. Quote only words returned by read_document.
+Work with the tools. Call several at once when you can, and finish in at most five rounds.
+Work one fund at a time, in the order policy FIN-07 sets, so the analyst can follow your path:
+- Round 1: call check_paperwork, read_document for FIN-07, and read_document for the documents of the first fund to try (the fund the analyst entered, or the first one FIN-07 says to charge).
+- Check that fund. Only if a rule you read limits months of help (for example 6 months in any 12-month period), call veteran_history with rule_section naming that rule, together with look_up_participant. Call check_limits for dollar caps.
+- If that fund cannot pay, call rule_out_fund and, in the same round, read_document for the next fund's documents. Check that fund the same way. If no fund is left, call rule_out_fund with next_fund "none".
+- Quote only words returned by read_document.
+- Fill in reason on every tool call: why you are calling it now, tied to the invoice or to what an earlier tool returned (for example "SSVF months are used up, so check the county fund rules").
 
 Rules for your answer:
 - Use only what the tools return. Do not rely on outside knowledge of grant rules. If the documents do not settle a question, say so.
@@ -395,11 +448,13 @@ function oneShotSteps(inv) {
   const ch = computeChecks(inv);
   const PAPER = ["Backup in packet", "Payee"];
   const steps = [
-    { kind: "paperwork", title: "Checked the paperwork in the packet", detail: ch.filter(c => PAPER.includes(c.label)).map(c => c.value).join(". ") },
-    { kind: "count", title: "Counted months and dollar limits", detail: ch.filter(c => !PAPER.includes(c.label) && c.state !== "info").map(c => c.label).join(", ") || "Nothing to count for this invoice." }
+    { kind: "paperwork", title: "Checked the paperwork in the packet", source: "Invoice packet", detail: ch.filter(c => PAPER.includes(c.label)).map(c => c.value).join(". ") },
+    { kind: "doc", title: "Gave Claude the rule documents for this site", source: siteDocIds(inv).map(d => DOC_SOURCE[d]).join(" · "), detail: "" }
   ];
-  if (inv.client) steps.splice(1, 0, { kind: "person", title: `Looked up participant ${inv.client}'s history`, detail: plainParticipant(participantSummary(inv.client)) });
-  steps.push({ kind: "doc", title: "Gave Claude these documents", detail: siteDocIds(inv).map(d => DOC_PLAIN[d]).join(", ") });
+  if (inv.client) steps.push({ kind: "person", title: "Looked up the veteran's history", source: "Participant record", detail: plainParticipant(participantSummary(inv.client)) });
+  const hk = historyKind(inv);
+  if (inv.client && hk && siteDocIds(inv).includes("38CFR62")) { const h = veteranHistory(inv.client, inv.period, hk); if (h.found) steps.push({ kind: "history", title: "Checked the last 12 months against the SSVF month limit", source: "SSVF payment history", detail: historyLine(h), data: h }); }
+  steps.push({ kind: "count", title: "Counted months and dollar limits", source: "Calculated by the page", detail: ch.filter(c => !PAPER.includes(c.label) && c.state !== "info").map(c => c.label).join(", ") || "Nothing to count for this invoice." });
   return steps.map(s => ({ ...s, state: "done", by: "page" }));
 }
 
@@ -557,7 +612,7 @@ function generatePractice(seed, n) {
 
 
 // ---------- Eval framework ----------
-const PROMPT_VERSION = "v3 (tools + plain explanation)";
+const PROMPT_VERSION = "v7 (demo: one fund at a time, rule_out_fund pivots)";
 
 // Code checks: graded by code, never by Claude. critical = a miss sinks the whole case.
 const CODE_CHECKS = [
@@ -614,4 +669,4 @@ const DIAG_BUCKETS = [
   ["model", "All of the above were fine; the model got it wrong"]
 ];
 
-if (typeof module !== "undefined") module.exports = { codeChecks, buildJudgePrompt, CODE_CHECKS, JUDGE_CHECKS, generatePractice, PRACTICE_TEMPLATES, makeTools, buildToolPrompt, oneShotSteps, INVOICES, computeChecks, buildPrompt, allDocs, verifyQuote, scoreResult, windowCount };
+if (typeof module !== "undefined") module.exports = { veteranHistory, DOC_SOURCE, codeChecks, buildJudgePrompt, CODE_CHECKS, JUDGE_CHECKS, generatePractice, PRACTICE_TEMPLATES, makeTools, buildToolPrompt, oneShotSteps, INVOICES, computeChecks, buildPrompt, allDocs, verifyQuote, scoreResult, windowCount };
