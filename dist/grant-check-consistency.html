@@ -1,201 +1,43 @@
 <meta charset="utf-8">
-<title>Grant Coding Check</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<title>Grant Check Consistency</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Roboto:wght@400;500;700&display=swap">
 <style>
-/* Demo: one invoice, one button, the trace, the answer. Full version (evals, reviewer tools) is in archive/. */
+/* Consistency test: run the same invoice many times and count how many different answers and finance questions come back. */
 :root {
   --ground: #EEF1F5; --paper: #FFFFFF; --panel: #F5F7FA; --ink: #1B2430; --soft: #5A6573; --rule: #D6DCE4;
-  --navy: #003366; --navy-deep: #1C3664; --on-navy: #FFFFFF; --on-navy-soft: #B9C8DC;
-  --blue: #0074A6; --blue-tint: #E3F1F8;
-  --c-rule: #0074A6; --c-rule-t: #E3F1F8; --c-vet: #6B3FA0; --c-vet-t: #EFE8F7; --c-check: #4A5868; --c-check-t: #E9EDF2; --c-claude: #1C3664; --c-claude-t: #E1E8F3; --c-pivot: #8A5D00; --c-pivot-t: #FBF0D5;
-  --gold: #E9B732; --gold-tint: #FDF4DA; --gold-ink: #5C4300;
-  --ok: #1D6B3E; --ok-tint: #E3F2E8; --no: #B42318; --no-tint: #FBE7E4; --info: #8A5D00; --info-tint: #FBF0D5; --ask: #1C3664; --ask-tint: #E1E8F3;
-  --head: "Oswald", "Arial Narrow", sans-serif; --body: "Roboto", "Helvetica Neue", Arial, sans-serif;
-  color-scheme: light;
+  --navy: #003366; --navy-deep: #1C3664; --on-navy: #FFFFFF; --on-navy-soft: #B9C8DC; --blue: #0074A6; --gold: #E9B732;
+  --ok: #1D6B3E; --ok-tint: #E3F2E8; --no: #B42318; --no-tint: #FBE7E4;
+  --head: "Oswald", "Arial Narrow", sans-serif; --body: "Roboto", system-ui, sans-serif;
 }
 * { box-sizing: border-box }
-[hidden] { display: none !important }
-body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.55 var(--body) }
-:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px }
-.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
-.num { font-variant-numeric: tabular-nums }
-
+body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.5 var(--body) }
 .shell { background: var(--navy); color: var(--on-navy); border-bottom: 4px solid var(--gold) }
-.shell .in { max-width: 1240px; margin: 0 auto; padding-block: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px }
+.in { max-width: 1100px; margin: 0 auto; padding: 14px 16px }
 .brand { font: 600 20px/1.2 var(--head); text-transform: uppercase; letter-spacing: .14em; margin: 0 }
-.meta { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--on-navy-soft) }
-.fake { background: var(--gold); color: #2A2000; font: 700 12px/1 var(--body); letter-spacing: .04em; text-transform: uppercase; border-radius: 3px; padding: 5px 8px }
-
-main { max-width: 1240px; margin: 0 auto; padding-block: 24px 48px; display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 20px; align-items: start }
-@media (max-width: 900px) { main { grid-template-columns: 1fr } }
-.col { display: flex; flex-direction: column; gap: 16px; min-width: 0 }
-
-/* Queue: the invoices waiting for coding, like the list the sites use today */
-.queue-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px }
-.queue-head h2 { margin: 0 }
-.qcount { font-size: 13px; color: var(--soft) }
-.qlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px }
-.qrow { border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; background: var(--paper); cursor: grab; display: flex; flex-direction: column; gap: 4px; transition: border-color .15s ease-out, box-shadow .15s ease-out; user-select: none }
-.qrow:hover { border-color: var(--blue); box-shadow: 0 2px 8px rgba(0,51,102,.08) }
-.qrow:active { cursor: grabbing }
-.qrow.dragging { opacity: .5 }
-.qrow.current { border-color: var(--blue); box-shadow: inset 4px 0 0 var(--blue) }
-.qrow.locked { cursor: default; opacity: .6 }
-.qtop { display: flex; justify-content: space-between; gap: 10px; font-weight: 700 }
-.qdesc { font-size: 14px; color: var(--soft) }
-.qmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--soft); margin-top: 4px }
-.chip { font-size: 12px; font-weight: 500; border-radius: 999px; padding: 2px 9px; background: var(--info-tint); color: var(--info) }
-.chip.c-allowed { background: var(--ok-tint); color: var(--ok) } .chip.c-not_allowed { background: var(--no-tint); color: var(--no) }
-.chip.c-needs_info { background: var(--info-tint); color: var(--info) } .chip.c-escalate { background: var(--ask-tint); color: var(--ask) }
-.chip.c-run { background: var(--blue-tint); color: #00577D }
-.qhint { font-size: 13px; color: var(--soft); margin: 12px 0 0 }
-
-/* Drop zone: the check panel before an invoice is loaded */
-.drop { border: 2px dashed var(--rule); border-radius: 8px; background: var(--paper); min-height: 320px; display: grid; place-items: center; text-align: center; padding: 32px; color: var(--soft); transition: border-color .15s ease-out, background-color .15s ease-out }
-.drop b { display: block; font-size: 20px; color: var(--navy-deep); margin-bottom: 6px }
-.drop svg { width: 40px; height: 40px; color: var(--blue); margin-bottom: 10px }
-.tool.over .drop, .tool.over > .card:first-child { border-color: var(--blue); background: var(--blue-tint) }
-.tool.over > .card:first-child { border-style: dashed }
-.card { background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 22px }
-h2 { font: 500 17px/1.2 var(--head); text-transform: uppercase; letter-spacing: .1em; color: var(--navy-deep); margin: 0 0 14px }
-
-/* Invoice */
-.inv-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 20px }
-.vendor { font-size: 22px; font-weight: 700; margin: 0 }
-.amount { font-size: 30px; font-weight: 700 }
-.desc { margin: 2px 0 16px }
-.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px 20px; margin: 0 0 18px }
-.facts dt { font-size: 13px; color: var(--soft) } .facts dd { margin: 0; font-weight: 500 }
-.coding { width: 100%; border-collapse: collapse }
-.coding th, .coding td { text-align: left; padding: 10px 8px; border-top: 1px solid var(--rule); vertical-align: top }
-.coding thead th { border-top: 0; font-size: 13px; font-weight: 500; color: var(--soft); padding-top: 0 }
-.coding tbody th { font-weight: 500; width: 34% }
-.blank { color: var(--info); font-weight: 700 }
-.was { color: var(--soft); text-decoration: line-through }
-.use { font-weight: 700 }
-.use.changed { background: var(--gold-tint); color: var(--gold-ink); border-radius: 3px; padding: 1px 6px }
-
-.go { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 20px }
-.btn { font: 500 17px var(--body); border-radius: 6px; padding: 12px 22px; cursor: pointer; border: 1px solid transparent; background: var(--blue); color: #fff }
-.btn:hover { background: color-mix(in srgb, var(--blue) 86%, #000) }
-.btn.quiet { background: var(--paper); color: var(--ink); border-color: var(--rule); font-size: 14px; padding: 7px 12px }
+.sub { color: var(--on-navy-soft); font-size: 13px; margin-top: 2px }
+main { max-width: 1100px; margin: 0 auto; padding: 16px }
+.card { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 20px; margin-bottom: 16px }
+h2 { font: 500 16px/1.2 var(--head); text-transform: uppercase; letter-spacing: .1em; color: var(--navy-deep); margin: 0 0 10px }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center }
+label { display: inline-flex; gap: 6px; align-items: center }
+input[type=number] { width: 64px; font: inherit; padding: 4px 6px }
+select { font: inherit; padding: 4px 6px }
+.btn { font: 500 15px var(--body); border-radius: 6px; padding: 8px 16px; cursor: pointer; border: 1px solid transparent; background: var(--blue); color: #fff }
+.btn.quiet { background: var(--paper); color: var(--ink); border-color: var(--rule) }
 .btn:disabled { opacity: .45; cursor: not-allowed }
-.hint { font-size: 14px; color: var(--soft) }
-
-/* Trace */
-.trace { list-style: none; margin: 0; padding: 0 }
-.trace li { display: grid; grid-template-columns: 32px 1fr; gap: 0 12px; position: relative; padding-bottom: 14px }
-.trace li:not(:last-child)::after { content: ""; position: absolute; left: 15px; top: 32px; bottom: 0; width: 2px; background: var(--rule) }
-.ic { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--panel); color: var(--navy-deep); border: 1px solid var(--rule) }
-.ic svg { width: 17px; height: 17px }
-.st-done .ic { background: var(--blue-tint); color: var(--blue); border-color: transparent }
-.st-error .ic { background: var(--no-tint); color: var(--no); border-color: transparent }
-.st-running .ic { border-color: var(--blue) }
-.st-final .ic { background: var(--gold-tint); color: var(--gold-ink); border-color: var(--gold) }
-.t { font-weight: 500; padding-top: 5px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px }
-.st-running .t::after { content: ""; width: 12px; height: 12px; border: 2px solid var(--rule); border-top-color: var(--blue); border-radius: 50%; animation: spin .9s linear infinite }
-.src { font-size: 12px; font-weight: 500; border-radius: 999px; padding: 2px 9px; background: var(--panel); color: var(--soft); white-space: nowrap }
-.src.official { background: var(--blue-tint); color: #00577D }
-.src.fakedoc { background: var(--gold-tint); color: var(--gold-ink) }
-.d { font-size: 14px; color: var(--soft); margin-top: 2px }
-.why { font-size: 14px; color: var(--ink); margin-top: 3px; font-style: italic }
-.why b { font-style: normal; font-weight: 600; color: var(--blue) }
-.enter { animation: stepin .35s cubic-bezier(.16,1,.3,1) both }
-@keyframes spin { to { transform: rotate(360deg) } }
-@keyframes stepin { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
-@media (prefers-reduced-motion: reduce) { .st-running .t::after, .enter { animation: none } }
-/* Trace categories: one color per kind of source */
-.trace li { --c: var(--c-check); --ct: var(--c-check-t) }
-.trace li.cat-rule { --c: var(--c-rule); --ct: var(--c-rule-t) }
-.trace li.cat-vet { --c: var(--c-vet); --ct: var(--c-vet-t) }
-.trace li.cat-claude { --c: var(--c-claude); --ct: var(--c-claude-t) }
-.trace li.cat-pivot { --c: var(--c-pivot); --ct: var(--c-pivot-t) }
-.trace li.st-done .ic, .trace li.st-final .ic { background: var(--ct); color: var(--c); border-color: transparent }
-.trace li.st-running .ic { border-color: var(--c); color: var(--c) }
-.sb { border-left: 3px solid var(--c); padding: 0 0 2px 12px; min-width: 0 }
-.cat { display: block; font: 600 11px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--c); padding-top: 4px }
-.t { padding-top: 3px }
-.trace li.cat-pivot .sb { background: var(--ct); border: 2px solid var(--c); border-radius: 8px; padding: 8px 14px 10px }
-.trace li.cat-pivot .t { font-weight: 700; font-size: 17px; color: var(--c) }
-.trace li.cat-pivot .d { color: var(--ink) }
-.trace li.cat-pivot.dead { --c: var(--no); --ct: var(--no-tint) }
-.trace li.find-bad .t { color: var(--no); font-weight: 700 }
-.trace li.find-ok .t { color: var(--ok) }
-.trace-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap }
-.trace-head h2 { margin-bottom: 8px }
-.tlegend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--soft); margin: -4px 0 14px }
-.tlegend span { display: inline-flex; align-items: center; gap: 6px }
-.tlegend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block }
-.src.official, .src.fakedoc { background: var(--panel); color: var(--soft) }
-/* Month strip for veteran_history */
-.hist { margin: 10px 0 2px; max-width: 600px }
-.hist-cap { font-weight: 700; font-size: 15px; margin-bottom: 6px }
-.hist-cap.over { color: var(--no) } .hist-cap.ok { color: var(--ok) }
-.cells { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px }
-.cell { height: 34px; border-radius: 4px; background: var(--panel); border: 1px solid var(--rule) }
-.cell.paid { background: var(--blue); border-color: var(--blue) }
-.cell.now { border: 2px dashed var(--ok); background: var(--ok-tint) }
-.cell.now.over { border-color: var(--no); background: var(--no-tint) }
-.mlab { font-size: 11px; color: var(--soft); text-align: center; margin-top: 3px; white-space: nowrap; overflow: hidden }
-.mlab.now { color: var(--ink); font-weight: 700 }
-.hlegend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--soft); margin-top: 8px }
-.hlegend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; background: var(--panel); border: 1px solid var(--rule) }
-.hlegend i.paid { background: var(--blue); border-color: var(--blue) }
-.hlegend i.now { border: 2px dashed var(--no); background: var(--no-tint) }
-.hlegend i.now.ok { border-color: var(--ok); background: var(--ok-tint) }
-.hist.grow .cell { animation: cellin .3s ease-out both }
-@keyframes cellin { from { opacity: 0; transform: scaleY(.4) } to { opacity: 1; transform: none } }
-@media (prefers-reduced-motion: reduce) { .hist.grow .cell { animation: none } }
-.tq { margin: 8px 0 2px; padding: 10px 14px; background: var(--panel); border-left: 3px solid var(--gold); border-radius: 0 6px 6px 0; font-size: 16px; line-height: 1.5 }
-.tq span { display: block; margin-top: 6px; font-size: 13px }
-.qlinks { display: flex !important; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px !important }
-.qlink { font: 500 13px var(--body); color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px }
-#docview { border: 0; border-radius: 10px; padding: 0; width: min(760px, calc(100vw - 32px)); max-height: 85vh; box-shadow: 0 20px 60px rgba(0,0,0,.25) }
-#docview::backdrop { background: rgba(20,30,45,.45) }
-.dv { padding: 0 22px 22px; font-size: 15px; line-height: 1.55 }
-.dvh { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; position: sticky; top: 0; z-index: 1; background: var(--paper); padding: 18px 0 10px; border-bottom: 1px solid var(--rule); margin-bottom: 6px }
-.dv h4 { margin: 16px 0 6px; font-size: 15px }
-.dv p { margin: 0 0 8px; padding: 4px 8px; border-radius: 4px }
-.dv p.hit { box-shadow: inset 3px 0 0 var(--gold) }
-.dv mark { background: var(--gold-tint); color: var(--ink); font-weight: 600; padding: 1px 2px; border-radius: 2px; box-shadow: 0 0 0 1px var(--gold) }
-
-.elapsed { font-size: 14px; color: var(--soft); margin: 4px 0 0 44px }
-
-/* Answer */
-.verdict { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border-radius: 8px; margin-bottom: 20px }
-.verdict svg { width: 28px; height: 28px; flex: none; margin-top: 2px }
-.what { font-size: 23px; font-weight: 700; line-height: 1.25; margin: 0 0 4px }
-.verdict p { margin: 0; color: var(--ink) }
-.verdict p.what { color: inherit }
-.v-allowed { background: var(--ok-tint); color: var(--ok) } .v-not_allowed { background: var(--no-tint); color: var(--no) }
-.v-needs_info { background: var(--info-tint); color: var(--info) } .v-escalate { background: var(--ask-tint); color: var(--ask) }
-h3 { font-size: 15px; margin: 0 0 8px }
-.missed { margin: 0 0 6px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px }
-.missed li { display: grid; grid-template-columns: 20px 1fr; gap: 8px; font-size: 17px }
-.missed svg { width: 18px; height: 18px; margin-top: 4px; color: var(--gold-ink) }
-details { margin-top: 20px; border-top: 1px solid var(--rule); padding-top: 14px }
-summary { cursor: pointer; font-weight: 500; color: var(--blue) }
-blockquote { margin: 12px 0 0; padding: 12px 14px; background: var(--panel); border-radius: 6px }
-.qsrc { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; font-size: 13px; color: var(--soft); margin-bottom: 4px }
-.qsrc b { color: var(--ink); font-weight: 500 }
-.found { color: var(--ok); font-weight: 500 } .notfound { color: var(--no); font-weight: 500 }
-.why { margin: 10px 0 0; font-size: 15px }
-.err { color: var(--no); font-weight: 500; margin: 0 }
-footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13px; color: var(--soft) }
-@media (max-width: 560px) { .card { padding: 16px } .what { font-size: 20px } .coding th, .coding td { padding: 9px 5px } }
+.hint { color: var(--soft); font-size: 13px }
+.score { font-size: 18px; font-weight: 700; margin: 4px 0 10px }
+.score.pass { color: var(--ok) } .score.fail { color: var(--no) }
+table { border-collapse: collapse; width: 100%; font-size: 13px }
+th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--rule) }
+th { background: var(--navy); color: #fff; font-weight: 500 }
+td.n { font-weight: 700; white-space: nowrap }
+.bad { color: var(--no); font-weight: 600 }
+details { margin-top: 10px } summary { cursor: pointer; color: var(--blue) }
 </style>
-
-<header class="shell">
-  <div class="in gutter">
-    <h1 class="brand">Grant Coding Check</h1>
-    <div class="meta"><span class="fake">Fake data</span><span>Basecamp prototype</span></div>
-  </div>
-</header>
-<main class="gutter" id="app"></main>
-<footer class="gutter">The invoices, veteran, funds, county agreement, foundation letter and finance policy are invented for this demo. Federal rule text is the official eCFR text. Not compliance advice.</footer>
-
+<header class="shell"><div class="in"><h1 class="brand">Grant Check: consistency test</h1><div class="sub">Runs the same invoice many times. Target: one answer and one finance question per invoice. Fake data.</div></div></header>
+<main id="app"></main>
 <script type="application/json" id="regs-json">{"200.403":{"head":"\u00a7 200.403 Factors affecting allowability of costs.","paras":["Except where otherwise authorized by statute, costs must meet the following criteria to be allowable under Federal awards:","(a) Be necessary and reasonable for the performance of the Federal award and be allocable thereto under these principles.","(b) Conform to any limitations or exclusions set forth in these principles or in the Federal award as to types or amount of cost items.","(c) Be consistent with policies and procedures that apply uniformly to both federally financed and other activities of the recipient or subrecipient.","(d) Be accorded consistent treatment. For example, a cost must not be assigned to a Federal award as a direct cost if any other cost incurred for the same purpose in like circumstances has been allocated to the Federal award as an indirect cost.","(e) Be determined in accordance with generally accepted accounting principles (GAAP), except, for State and local governments and Indian Tribes only, as otherwise provided for in this part.","(f) Not be included as a cost or used to meet cost sharing requirements of any other federally-financed program in either the current or a prior period. See \u00a7 200.306(b).","(g) Be adequately documented. See \u00a7\u00a7 200.300 through 200.309.","(h) Administrative closeout costs may be incurred until the due date of the final report(s). If incurred, these costs must be liquidated prior to the due date of the final report(s) and charged to the final budget period of the award unless otherwise specified by the Federal agency. All other costs must be incurred during the approved budget period. At its discretion, the Federal agency is authorized to waive prior written approvals to carry forward unobligated balances to subsequent budget periods. See \u00a7 200.308(g)(3)."]},"200.404":{"head":"\u00a7 200.404 Reasonable costs.","paras":["A cost is reasonable if it does not exceed an amount that a prudent person would incur under the circumstances prevailing when the decision was made to incur the cost. In determining the reasonableness of a given cost, consideration must be given to the following:","(a) Whether the cost is generally recognized as ordinary and necessary for the recipient's or subrecipient's operation or the proper and efficient performance of the Federal award;","(b) The restraints or requirements imposed by such factors as sound business practices; arm's-length bargaining; Federal, State, local, tribal, and other laws and regulations; and terms and conditions of the Federal award;","(c) Market prices for comparable costs for the geographic area;","(d) Whether the individuals concerned acted with prudence in the circumstances considering their responsibilities to the recipient or subrecipient, its employees, its students or membership (if applicable), the public at large, and the Federal Government; and","(e) Whether the cost represents a deviation from the recipient's or subrecipient's established written policies and procedures for incurring costs."]},"200.405":{"head":"\u00a7 200.405 Allocable costs.","paras":["(a) Allocable costs in general. A cost is allocable to a Federal award or other cost objective if the cost is assignable to that Federal award or other cost objective in accordance with the relative benefits received. This standard is met if the cost satisfies any of the following criteria:","(1) Is incurred specifically for the Federal award;","(2) Benefits both the Federal award and other work of the recipient or subrecipient and can be distributed in proportions that may be approximated using reasonable methods; or","(3) Is necessary to the overall operation of the recipient or subrecipient and is assignable in part to the Federal award in accordance with these cost principles.","(b) Allocation of indirect costs. All activities which benefit from the recipient's or subrecipient's indirect cost, including unallowable activities and donated services by the recipient or subrecipient or third parties, will receive an appropriate allocation of indirect costs.","(c) Limitation on charging certain allocable costs to other Federal awards. A cost allocable to a particular Federal award may not be charged to other Federal awards (for example, to overcome fund deficiencies or to avoid restrictions imposed by Federal statutes, regulations, or the terms and conditions of the Federal awards). However, this prohibition would not preclude the recipient or subrecipient from shifting costs that are allowable under two or more Federal awards in accordance with existing Federal statutes, regulations, or the terms and conditions of the Federal awards.","(d) Direct cost allocation principles. If a cost benefits two or more projects or activities in proportions that can be determined without undue effort or cost, the cost must be allocated to the projects based on the proportional benefit. However, when those proportions cannot be determined because of the interrelationship of the work involved, then, notwithstanding paragraph (c), the costs may be allocated or transferred to benefitted projects on any reasonable documented basis. Where the purchase of equipment or other capital asset is specifically authorized under a Federal award, the costs are assignable to the Federal award regardless of the use that may be made of the equipment or other capital asset involved, when no longer needed for the purpose for which it was originally required. See also \u00a7\u00a7 200.310 through 200.316 and 200.439.","(e) Costs of contracts subject to CAS. If a contract is subject to CAS, costs must be allocated to that contract according to the Cost Accounting Standards, which take precedence over the allocation provisions in this part."]},"578.37":{"head":"\u00a7 578.37 Program components and uses of assistance.","paras":["(a) Continuum of Care funds may be used to pay for the eligible costs listed in \u00a7 578.39 through \u00a7 578.63 when used to establish and operate projects under five program components: permanent housing; transitional housing; supportive services only; HMIS; and, in some cases, homelessness prevention. Although grant funds may be used by recipients and subrecipients in all components for the eligible costs of contributing data to the HMIS designated by the Continuum of Care, only HMIS Leads may use grant funds for an HMIS component. Administrative costs are eligible for all components. All components are subject to the restrictions on combining funds for certain eligible activities in a single project found in \u00a7 578.87(c). The eligible program components are:","(1) Permanent housing (PH). Permanent housing is community-based housing, the purpose of which is to provide housing without a designated length of stay. Grant funds may be used for acquisition, rehabilitation, new construction, leasing, rental assistance, operating costs, and supportive services. PH includes:","(i) Permanent supportive housing for persons with disabilities (PSH). PSH can only provide assistance to individuals with disabilities and families in which one adult or child has a disability. Supportive services designed to meet the needs of the program participants must be made available to the program participants.","(ii) Rapid rehousing. Continuum of Care funds may provide supportive services, as set forth in \u00a7 578.53, and/or short-term (up to 3 months) and/or medium-term (for 3 to 24 months) tenant-based rental assistance, as set forth in \u00a7 578.51(c), as necessary to help a homeless individual or family, with or without disabilities, move as quickly as possible into permanent housing and achieve stability in that housing. When providing short-term and/or medium-term rental assistance to program participants, the rental assistance is subject to \u00a7 578.51(a)(1), but not \u00a7 578.51(a)(1)(i) and (ii); (a)(2); (c) and (f) through (i); and (l)(1). These projects:","(A) Must follow the written policies and procedures established by the Continuum of Care for determining and prioritizing which eligible families and individuals will receive rapid rehousing assistance, as well as the amount or percentage of rent that each program participant must pay.","(B) May set a maximum amount or percentage of rental assistance that a program participant may receive, a maximum number of months that a program participant may receive rental assistance, and/or a maximum number of times that a program participant may receive rental assistance. The recipient or subrecipient may also require program participants to share in the costs of rent. For the purposes of calculating rent for rapid rehousing, the rent shall equal the sum of the total monthly rent for the unit and, if the tenant pays separately for utilities, the monthly allowance for utilities (excluding telephone) established by the public housing authority for the area in which the housing is located.","(C) Limit rental assistance to no more than 24 months to a household.","(D) May provide supportive services for no longer than 6 months after rental assistance stops.","(E) Must re-evaluate, not less than once annually, that the program participant lacks sufficient resources and support networks necessary to retain housing without Continuum of Care assistance and the types and amounts of assistance that the program participant needs to retain housing. The recipient or subrecipient may require each program participant receiving assistance to notify the recipient or subrecipient of changes in the program participant's income or other circumstances (e.g., changes in household composition) that affect the program participant's need for assistance. When notified of a relevant change, the recipient or subrecipient must reevaluate the program participant's eligibility and the amount and types of assistance that the program participant needs.","(F) Require the program participant to meet with a case manager not less than once per month to assist the program participant in ensuring long-term housing stability. The project is exempt from this requirement if the Violence Against Women Act of 1994 (42 U.S.C. 13925 et seq.) or the Family Violence Prevention and Services Act (42 U.S.C. 10401 et seq.) prohibits the recipient carrying out the project from making its housing conditional on the participant's acceptance of services.","(2) Transitional Housing (TH). Transitional housing facilitates the movement of homeless individuals and families to PH within 24 months of entering TH. Grant funds may be used for acquisition, rehabilitation, new construction, leasing, rental assistance, operating costs, and supportive services.","(3) Supportive Service Only (SSO). Funds may be used for acquisition, rehabilitation, relocation costs, or leasing of a facility from which supportive services will be provided, and supportive services in order to provide supportive services to unsheltered and sheltered homeless persons for whom the recipient or subrecipient is not providing housing or housing assistance. SSO includes street outreach.","(4) HMIS. Funds may be used by HMIS Leads to lease a structure in which the HMIS is operated or as operating funds to operate a structure in which the HMIS is operated, and for other costs eligible in \u00a7 578.57.","(5) Homelessness prevention. Funds may be used by recipients in Continuums of Care-designated high-performing communities for housing relocation and stabilization services, and short- and/or medium-term rental assistance, as described in 24 CFR 576.105 and 24 CFR 576.106, that are necessary to prevent an individual or family from becoming homeless.","(b) Uses of assistance. Funds are available to pay for the eligible costs listed in \u00a7 578.39 through \u00a7 578.63 when used to:","(1) Establish new housing or new facilities to provide supportive services;","(2) Expand existing housing and facilities in order to increase the number of homeless persons served;","(3) Bring existing housing and facilities into compliance with State and local government health and safety standards, as described in \u00a7 578.87;","(4) Preserve existing permanent housing and facilities that provide supportive services;","(5) Provide supportive services for residents of supportive housing or for homeless persons not residing in supportive housing;","(6) Continue funding permanent housing when the recipient has received funding under this part for leasing, supportive services, operating costs, or rental assistance;","(7) Establish and operate an HMIS or comparable database; and","(8) Establish and carry out a Continuum of Care planning process and operate a Continuum of Care.","(c) Multiple purposes. Structures used to provide housing, supportive housing, supportive services, or as a facility for HMIS activities may also be used for other purposes. However, assistance under this part will be available only in proportion to the use of the structure for supportive housing or supportive services. If eligible and ineligible activities are carried out in separate portions of the same structure or in separate structures, grant funds may not be used to pay for more than the actual cost of acquisition, construction, or rehabilitation of the portion of the structure or structures used for eligible activities. If eligible and ineligible activities are carried out in the same structure, the costs will be prorated based on the amount of time that the space is used for eligible versus ineligible activities."]},"578.53":{"head":"\u00a7 578.53 Supportive services.","paras":["(a) In general. Grant funds may be used to pay the eligible costs of supportive services that address the special needs of the program participants. If the supportive services are provided in a supportive service facility not contained in a housing structure, the costs of day-to-day operation of the supportive service facility, including maintenance, repair, building security, furniture, utilities, and equipment are eligible as a supportive service.","(1) Supportive services must be necessary to assist program participants obtain and maintain housing.","(2) Recipients and subrecipients shall conduct an annual assessment of the service needs of the program participants and should adjust services accordingly.","(b) Duration. (1) For a transitional housing project, supportive services must be made available to residents throughout the duration of their residence in the project.","(2) Permanent supportive housing projects must provide supportive services for the residents to enable them to live as independently as is practicable throughout the duration of their residence in the project.","(3) Services may also be provided to former residents of transitional housing and current residents of permanent housing who were homeless in the prior 6 months, for no more than 6 months after leaving transitional housing or homelessness, respectively, to assist their adjustment to independent living.","(4) Rapid rehousing projects must require the program participant to meet with a case manager not less than once per month as set forth in \u00a7 578.37(a)(1)(ii)(F), to assist the program participant in maintaining long-term housing stability.","(c) Special populations. All eligible costs are eligible to the same extent for program participants who are unaccompanied homeless youth; persons living with HIV/AIDS; and victims of domestic violence, dating violence, sexual assault, or stalking.","(d) Ineligible costs. Any cost that is not described as an eligible cost under this section is not an eligible cost of providing supportive services using Continuum of Care program funds. Staff training and the costs of obtaining professional licenses or certifications needed to provide supportive services are not eligible costs.","(e) Eligible costs. (1) Annual Assessment of Service Needs. The costs of the assessment required by \u00a7 578.53(a)(2) are eligible costs.","(2) Assistance with moving costs. Reasonable one-time moving costs are eligible and include truck rental and hiring a moving company.","(3) Case management. The costs of assessing, arranging, coordinating, and monitoring the delivery of individualized services to meet the needs of the program participant(s) are eligible costs. Component services and activities consist of:","(i) Counseling;","(ii) Developing, securing, and coordinating services;","(iii) Using the centralized or coordinated assessment system as required under \u00a7 578.23(c)(9).","(iv) Obtaining federal, State, and local benefits;","(v) Monitoring and evaluating program participant progress;","(vi) Providing information and referrals to other providers;","(vii) Providing ongoing risk assessment and safety planning with victims of domestic violence, dating violence, sexual assault, and stalking; and","(viii) Developing an individualized housing and service plan, including planning a path to permanent housing stability.","(4) Child care. The costs of establishing and operating child care, and providing child-care vouchers, for children from families experiencing homelessness, including providing meals and snacks, and comprehensive and coordinated developmental activities, are eligible.","(i) The children must be under the age of 13, unless they are disabled children.","(ii) Disabled children must be under the age of 18.","(iii) The child-care center must be licensed by the jurisdiction in which it operates in order for its costs to be eligible.","(5) Education services. The costs of improving knowledge and basic educational skills are eligible.","(i) Services include instruction or training in consumer education, health education, substance abuse prevention, literacy, English as a Second Language, and General Educational Development (GED).","(ii) Component services or activities are screening, assessment and testing; individual or group instruction; tutoring; provision of books, supplies, and instructional material; counseling; and referral to community resources.","(6) Employment assistance and job training. The costs of establishing and operating employment assistance and job training programs are eligible, including classroom, online and/or computer instruction, on-the-job instruction, services that assist individuals in securing employment, acquiring learning skills, and/or increasing earning potential. The cost of providing reasonable stipends to program participants in employment assistance and job training programs is also an eligible cost.","(i) Learning skills include those skills that can be used to secure and retain a job, including the acquisition of vocational licenses and/or certificates.","(ii) Services that assist individuals in securing employment consist of:","(A) Employment screening, assessment, or testing;","(B) Structured job skills and job-seeking skills;","(C) Special training and tutoring, including literacy training and pre-vocational training;","(D) Books and instructional material;","(E) Counseling or job coaching; and","(F) Referral to community resources.","(7) Food. The cost of providing meals or groceries to program participants is eligible.","(8) Housing search and counseling services. Costs of assisting eligible program participants to locate, obtain, and retain suitable housing are eligible.","(i) Component services or activities are tenant counseling; assisting individuals and families to understand leases; securing utilities; and making moving arrangements.","(ii) Other eligible costs are:","(A) Mediation with property owners and landlords on behalf of eligible program participants;","(B) Credit counseling, accessing a free personal credit report, and resolving personal credit issues; and","(C) The payment of rental application fees.","(iii) Housing counseling, as defined in \u00a7 5.100, that is funded with or provided in connection with grant funds must be carried out in accordance with \u00a7 5.111. When recipients or subrecipients provide housing services to eligible persons that are incidental to a larger set of holistic case management services, these services do not meet the definition of Housing counseling, as defined in \u00a7 5.100, and therefore are not required to be carried out in accordance with the certification requirements of \u00a7 5.111.","(9) Legal services. Eligible costs are the fees charged by licensed attorneys and by person(s) under the supervision of licensed attorneys, for advice and representation in matters that interfere with the homeless individual or family's ability to obtain and retain housing.","(i) Eligible subject matters are child support; guardianship; paternity; emancipation; legal separation; orders of protection and other civil remedies for victims of domestic violence, dating violence, sexual assault, and stalking; appeal of veterans and public benefit claim denials; landlord tenant disputes; and the resolution of outstanding criminal warrants.","(ii) Component services or activities may include receiving and preparing cases for trial, provision of legal advice, representation at hearings, and counseling.","(iii) Fees based on the actual service performed (i.e., fee for service) are also eligible, but only if the cost would be less than the cost of hourly fees. Filing fees and other necessary court costs are also eligible. If the subrecipient is a legal services provider and performs the services itself, the eligible costs are the subrecipient's employees' salaries and other costs necessary to perform the services.","(iv) Legal services for immigration and citizenship matters and issues related to mortgages and homeownership are ineligible. Retainer fee arrangements and contingency fee arrangements are ineligible.","(10) Life skills training. The costs of teaching critical life management skills that may never have been learned or have been lost during the course of physical or mental illness, domestic violence, substance abuse, and homelessness are eligible. These services must be necessary to assist the program participant to function independently in the community. Component life skills training are the budgeting of resources and money management, household management, conflict management, shopping for food and other needed items, nutrition, the use of public transportation, and parent training.","(11) Mental health services. Eligible costs are the direct outpatient treatment of mental health conditions that are provided by licensed professionals. Component services are crisis interventions; counseling; individual, family, or group therapy sessions; the prescription of psychotropic medications or explanations about the use and management of medications; and combinations of therapeutic approaches to address multiple problems.","(12) Outpatient health services. Eligible costs are the direct outpatient treatment of medical conditions when provided by licensed medical professionals including:","(i) Providing an analysis or assessment of an individual's health problems and the development of a treatment plan;","(ii) Assisting individuals to understand their health needs;","(iii) Providing directly or assisting individuals to obtain and utilize appropriate medical treatment;","(iv) Preventive medical care and health maintenance services, including in-home health services and emergency medical services;","(v) Provision of appropriate medication;","(vi) Providing follow-up services; and","(vii) Preventive and noncosmetic dental care.","(13) Outreach services. The costs of activities to engage persons for the purpose of providing immediate support and intervention, as well as identifying potential program participants, are eligible.","(i) Eligible costs include the outreach worker's transportation costs and a cell phone to be used by the individual performing the outreach.","(ii) Component activities and services consist of: initial assessment; crisis counseling; addressing urgent physical needs, such as providing meals, blankets, clothes, or toiletries; actively connecting and providing people with information and referrals to homeless and mainstream programs; and publicizing the availability of the housing and/or services provided within the geographic area covered by the Continuum of Care.","(14) Substance abuse treatment services. The costs of program participant intake and assessment, outpatient treatment, group and individual counseling, and drug testing are eligible. Inpatient detoxification and other inpatient drug or alcohol treatment are ineligible.","(15) Transportation. Eligible costs are:","(i) The costs of program participant's travel on public transportation or in a vehicle provided by the recipient or subrecipient to and from medical care, employment, child care, or other services eligible under this section.","(ii) Mileage allowance for service workers to visit program participants and to carry out housing quality inspections;","(iii) The cost of purchasing or leasing a vehicle in which staff transports program participants and/or staff serving program participants;","(iv) The cost of gas, insurance, taxes, and maintenance for the vehicle;","(v) The costs of recipient or subrecipient staff to accompany or assist program participants to utilize public transportation; and","(vi) If public transportation options are not sufficient within the area, the recipient may make a one-time payment on behalf of a program participant needing car repairs or maintenance required to operate a personal vehicle, subject to the following:","(A) Payments for car repairs or maintenance on behalf of the program participant may not exceed 10 percent of the Blue Book value of the vehicle (Blue Book refers to the guidebook that compiles and quotes prices for new and used automobiles and other vehicles of all makes, models, and types);","(B) Payments for car repairs or maintenance must be paid by the recipient or subrecipient directly to the third party that repairs or maintains the car; and","(C) The recipients or subrecipients may require program participants to share in the cost of car repairs or maintenance as a condition of receiving assistance with car repairs or maintenance.","(16) Utility deposits. This form of assistance consists of paying for utility deposits. Utility deposits must be a one-time fee, paid to utility companies.","(17) Direct provision of services. If the service described in paragraphs (e)(1) through (e)(16) of this section is being directly delivered by the recipient or subrecipient, eligible costs for those services also include:","(i) The costs of labor or supplies, and materials incurred by the recipient or subrecipient in directly providing supportive services to program participants; and","(ii) The salary and benefit packages of the recipient and subrecipient staff who directly deliver the services."]},"578.59":{"head":"\u00a7 578.59 Project administrative costs.","paras":["(a) Eligible costs. The recipient or subrecipient may use up to 10 percent of any grant awarded under this part, excluding the amount for Continuum of Care Planning Activities and UFA costs, for the payment of project administrative costs related to the planning and execution of Continuum of Care activities. This does not include staff and overhead costs directly related to carrying out activities eligible under \u00a7 578.43 through \u00a7 578.57, because those costs are eligible as part of those activities. Eligible administrative costs include:","(1) General management, oversight, and coordination. Costs of overall program management, coordination, monitoring, and evaluation. These costs include, but are not limited to, necessary expenditures for the following:","(i) Salaries, wages, and related costs of the recipient's staff, the staff of subrecipients, or other staff engaged in program administration. In charging costs to this category, the recipient may include the entire salary, wages, and related costs allocable to the program of each person whose primary responsibilities with regard to the program involve program administration assignments, or the pro rata share of the salary, wages, and related costs of each person whose job includes any program administration assignments. The recipient may use only one of these methods for each fiscal year grant. Program administration assignments include the following:","(A) Preparing program budgets and schedules, and amendments to those budgets and schedules;","(B) Developing systems for assuring compliance with program requirements;","(C) Developing agreements with subrecipients and contractors to carry out program activities;","(D) Monitoring program activities for progress and compliance with program requirements;","(E) Preparing reports and other documents directly related to the program for submission to HUD;","(F) Coordinating the resolution of audit and monitoring findings;","(G) Evaluating program results against stated objectives; and","(H) Managing or supervising persons whose primary responsibilities with regard to the program include such assignments as those described in paragraph (a)(1)(i)(A) through (G) of this section.","(ii) Travel costs incurred for monitoring of subrecipients;","(iii) Administrative services performed under third-party contracts or agreements, including general legal services, accounting services, and audit services; and","(iv) Other costs for goods and services required for administration of the program, including rental or purchase of equipment, insurance, utilities, office supplies, and rental and maintenance (but not purchase) of office space.","(2) Training on Continuum of Care requirements. Costs of providing training on Continuum of Care requirements and attending HUD-sponsored Continuum of Care trainings.","(3) Environmental review. Costs of carrying out the environmental review responsibilities under \u00a7 578.31.","(b) Sharing requirement. (1) UFAs. If the recipient is a UFA that carries out a project, it may use up to 10 percent of the grant amount awarded for the project on project administrative costs. The UFA must share the remaining project administrative funds with its subrecipients.","(2) Recipients that are not UFAs. If the recipient is not a UFA, it must share at least 50 percent of project administrative funds with its subrecipients."]},"62.34":{"head":"\u00a7 62.34 Other supportive services.","paras":["Grantees may provide the following services which are necessary for maintaining independent living in permanent housing and housing stability:","(a) Rental assistance. Payment of rent, penalties or fees to help the participant remain in permanent housing or obtain permanent housing.","(1) A participant may receive rental assistance for a maximum of 10 months during a 2-year period (consecutive or nonconsecutive), such period beginning on the date that the grantee first pays rent on behalf of the participant; however, a participant cannot receive rental assistance for more than 6 months in any 12-month period beginning on the date that the grantee first pays rent on behalf of the participant. For extremely low-income veteran families, payments for rent cannot exceed 9 months in any 12-month period and 12 months during a 2-year period, such period beginning on the date that the grantee first pays rent on behalf of the participant. The rental assistance may be for rental payments that are currently due or are in arrears, and for the payment of penalties or fees incurred by a participant and required to be paid by the participant under an existing lease or court order. In all instances, rental assistance may only be provided if the payment of such rental assistance will directly allow the participant to remain in permanent housing or obtain permanent housing.","(2) Rental assistance must be paid by the grantee directly to the third party to whom rent is owed.","(3) As a condition of providing rental assistance, the grantee must help the participant develop a reasonable plan to address the participant's future ability to pay rent. Grantees must assist the participant to implement such plan by providing any necessary assistance or helping the participant to obtain any necessary public or private benefits or services.","(4) The rental assistance paid by a grantee must be in compliance with the following \u201crent reasonableness\u201d standard. \u201cRent reasonableness\u201d means the total rent charged for a unit must be reasonable in relation to the rents being charged during the same time period for comparable units in the private unassisted market and must not be in excess of rents being charged by the property owner during the same time period for comparable non-luxury unassisted units. To make this determination, the grantee should consider:","(i) The location, quality, size, type, and age of the unit; and","(ii) Any amenities, housing services, maintenance, and utilities to be provided by the property owner. Comparable rents can be checked by using a market study, by reviewing comparable units advertised for rent, or using a note from the property owner verifying the comparability of charged rents to other units owned by the property owner. Prior to providing rental assistance in the form of payment of penalties or fees incurred by a participant, the grantee must determine that such penalties or fees are reasonable.","(5) With respect to shared housing arrangements, the rent charged for a participant must be in relation to the size of the private space for that participant in comparison to other private space in the shared unit, excluding common space. A participant may be assigned a pro rata portion based on the ratio derived by dividing the number of bedrooms in their private space by the number of bedrooms in the unit. Participation in shared housing arrangements must be voluntary.","(6) Rental assistance payments cannot be provided on behalf of participants for the same period of time and for the same cost types that are being provided through another Federal housing subsidy program; however, such payments may be provided even though the participant is receiving State and local housing subsidy funds as long as the total subsidy received (including payments under this section) does not exceed the rent.","(7) Grantees may require participants to share in the cost of rent as a condition of receiving rental assistance.","(8) Extremely low-income veteran families and very low-income veteran families who meet the criteria of \u00a7 62.11 may be eligible to receive a rental subsidy as follows:","(i) For a 2-year period without recertification.","(ii) The applicable counties will be published annually in the Federal Register. A family must live in one of these applicable counties to be eligible for this subsidy. The counties will be chosen based on the cost and availability of affordable housing for both individuals and families within that county.","(iii) The maximum amount of this rental subsidy is 50 percent of reasonable rent as defined by paragraph (a)(4) of this section. Grantees must collaborate with their local Continuum of Care (CoC) as defined at 24 CFR 578.3 to determine the proper subsidy amounts to be used by all grantees in each applicable county.","(iv) Grantees must provide a letter of support from their local CoC to the Supportive Services for Veteran Families (SSVF) Program Office when requesting VA approval of this subsidy. The SSVF Program Office must approve all subsidy requests before the subsidy is used.","(v) Very low-income veteran families may receive this subsidy for a period of two years before recertification minus the number of months in which the recipient received the rental assistance provided under paragraph (a)(1) of this section.","(vi) Extremely low-income veteran families may receive this subsidy for up to a 2-year period before recertification following receipt of rental assistance under paragraph (a)(1) of this section.","(vii) For any month, the total rental payments provided to a family under this paragraph (a)(8) cannot be more than the total amount of rent. Payment of this subsidy by a grantee must conform to the requirements set forth in paragraphs (a)(2) through (7) of this section. The rental subsidy amount will not change for the veteran family in the second year of the two-year period, even if the annual amount published changes.","(viii) A veteran family will not need to be recertified as a very low-income veteran family as provided for by \u00a7 62.36(a) during the initial two-year period. After an initial two-year period, a family receiving this subsidy, or a combination of the rental assistance under paragraph (a)(1) of this section and this subsidy, may continue to receive rental payments under this section, but would require recertification at that time and once every two years.","(b) Utility-fee payment assistance. Payment of utility fees to help the participant to remain in permanent housing or obtain permanent housing.","(1) A participant may receive payments for utilities for a maximum of 10 months during a 2-year period, such period beginning on the date that the grantee first pays utility fees on behalf of the participant; provided, however, that a participant cannot receive payments for utilities for more than 6 months in any 12-month period beginning on the date that the grantee first pays a utility payment on behalf of the participant. For extremely low-income veteran families, payments for utilities cannot exceed 9 months in any 12-month period and 12 months during a 2-year period, such periods beginning on the date that the grantee first pays a utility payment on behalf of the participant. The payment for utilities may be for utility payments that are currently due or are in arrears, provided that the payment of such utilities will allow the participant to remain in permanent housing or obtain permanent housing.","(2) Payments for utilities must be paid by the grantee directly to a utility company. Payments for utilities only will be available if a participant, a legal representative of the participant, or a member of his/her household, has an account in his/her name with a utility company or proof of responsibility to make utility payments, such as cancelled checks or receipts in his/her name from a utility company.","(3) As a condition of providing payments for utilities, the grantee must help the participant develop a reasonable plan to address the participant's future ability to pay utility payments. Grantees must assist the participant to implement such plan by providing any necessary assistance or helping the participant to obtain any necessary public or private benefits or services.","(4) Payments for utilities cannot be provided on behalf of participants for the same period of time and for the same cost types that are being provided through another Federal, State, or local program.","(5) Grantees may require participants to share in the cost of utility payments as a condition of receiving payments for utilities.","(c) Deposits. Payment of security deposits or utility deposits to help the participant remain in permanent housing or obtain permanent housing.","(1) A participant may receive assistance with the payment of a security deposit a maximum of one time in every 2-year period, such period beginning on the date the grantee pays a security deposit on behalf of a participant.","(2) A participant may receive assistance with the payment of a utility deposit a maximum of one time in every 2-year period, such period beginning on the date the grantee pays a utility deposit on behalf of a participant.","(3) Any security deposit or utility deposit must be paid by the grantee directly to the third party to whom the security deposit or utility deposit is owed. The payment of such deposit must allow the participant to remain in the participant's existing permanent housing or help the participant to obtain and remain in permanent housing selected by the participant.","(4) As a condition of providing a security deposit payment or a utility deposit payment, the grantee must help the participant develop a reasonable plan to address the participant's future housing stability. Grantees must assist the participant to implement such plan by providing any necessary assistance or helping the participant to obtain any necessary public or private benefits or services.","(5) Security deposits and utility deposits covering the same period of time in which assistance is being provided through another housing subsidy program are eligible, as long as they cover separate cost types.","(6) Grantees may require participants to share in the cost of the security deposit or utility deposit as a condition of receiving assistance with such deposit.","(d) Moving costs. Payment of moving costs to help the participant to obtain permanent housing.","(1) A participant may receive assistance with moving costs a maximum of one time in every 3-year period, such period beginning on the date the grantee pays moving costs on behalf of a participant.","(2) Moving costs assistance must be paid by the grantee directly to a third party. Moving costs assistance includes reasonable moving costs, such as truck rental, hiring a moving company, or short-term storage fees for a maximum of 3 months or until the participant is in permanent housing, whichever is shorter.","(3) As a condition of providing moving costs assistance, the grantee must help the participant develop a reasonable plan to address the participant's future housing stability. Grantees must assist the participant to implement such plan by providing any necessary assistance or helping the participant to obtain any necessary public or private benefits or services.","(4) Moving costs assistance payments cannot be provided on behalf of participants for the same period of time and for the same cost types that are being provided through another Federal, State, or local program.","(5) Grantees may require participants to share in the cost of moving as a condition of receiving assistance with moving costs.","(e) General housing stability assistance. (1) A grantee may provide to a participant items necessary for a participant's life or safety on a temporary basis, in order to address a participant's emergency situation.","(2) A grantee may pay directly to a third party (and not to a participant), in an amount not to exceed $1,800, per participant during any 2-year period, beginning on the date that the grantee first submits a payment to a third party. This cap will be adjusted annually based on the Consumer Price Index for all Urban Consumers (CPI-U). This amount is for the following types of expenses:","(i) Expenses associated with gaining or keeping employment, such as obtaining uniforms, tools, certifications, and licenses.","(ii) Expenses associated with moving into permanent housing, such as obtaining basic kitchen utensils, bedding, and other supplies.","(iii) Expenses necessary for securing appropriate permanent housing, such as fees for housing applications, housing inspections, or background checks.","(3) A grantee may pay directly to a third party (and not to a participant) a reasonable amount for a broker's fee when such a third party has assisted in identifying permanent housing. The reasonableness of a fee will be determined based on conditions in the local housing market.","(f) Emergency housing assistance. If permanent housing, appropriate shelter beds and transitional housing are not available and subsequent rental housing has been identified generally but is not immediately available for move-in by the participant, then a grantee may place a participant in emergency housing, subject to the following limitations:","(1) Placement for a single veteran may not exceed 72 hours, unless the grantee can certify that appropriate shelter beds and transitional housing are still unavailable at the end of the 72 hour period.","(2) Placement for a veteran and his or her spouse with dependent(s) may not exceed 60 days.","(3) A participant may be placed in emergency housing only once during any 2-year period, beginning on the date that the grantee first pays for emergency housing on behalf of the participant.","(4) Permanent housing will be available before the end of the period during which the participant is placed in emergency housing.","(5) The cost of the emergency housing must be reasonable in relation to the costs charged for other available emergency housing considering the location, quality, size, and type of the emergency housing.","(g) Other. Other services as set forth in the Notice of Fund Availability or as approved by VA that are consistent with the Supportive Services for Veteran Families Program. Applicants may propose additional services in their supportive services grant application, and grantees may propose additional services by submitting a written request to modify the supportive services grant in accordance with \u00a7 62.60."]},"62.70":{"head":"\u00a7 62.70 Financial management and administrative costs.","paras":["(a) Grantees must comply with applicable requirements of the Uniform Administrative Requirements, Cost Principles, and Audit Requirements for Federal Awards under 2 CFR part 200.","(b) Grantees must use a financial management system that provides adequate fiscal control and accounting records and meets the requirements set forth in 2 CFR part 200.","(c) Payment up to the amount specified in the supportive services grant must be made only for allowable, allocable, and reasonable costs in conducting the work under the supportive services grant. The determination of allowable costs must be made in accordance with the applicable Federal Cost Principles set forth in 2 CFR part 200.","(d) Grantees are subject to the Uniform Administrative Requirements for Grants and Agreements with Institutions of Higher Education, Hospitals and other Non-Profit Organizations, codified at 38 CFR Part 49.","(e) Costs for administration by a grantee must not exceed 10 percent of the total amount of the supportive services grant. Administrative costs will consist of all direct and indirect costs associated with the management of the program. These costs will include the administrative costs, both direct and indirect, of subcontractors."]}}</script>
 <script>
 // ---------- Fake documents (labeled FAKE in the UI) ----------
@@ -211,7 +53,8 @@ const FAKE_DOCS = {
       "P5. Costs of managing the program, such as accounting, audit, human resources, executive oversight and general office costs, are Admin. Staff time, supplies and payments that directly serve participants are Program.",
       "P6. If a limit depends on participant history or a document that is not in the invoice packet, such as months of assistance used, prior deposits, other subsidies, income level or a rent reasonableness note, mark the invoice Needs info and do not guess.",
       "P7. If the governing documents do not settle the question, mark the invoice Escalate and write the question for the Grants Accountant.",
-      "P8. Every invoice needs a vendor invoice, an approval signature and service dates. Participant assistance must be paid to the third party owed, never to the participant."
+      "P8. Every invoice needs a vendor invoice, an approval signature and service dates. Participant assistance must be paid to the third party owed, never to the participant.",
+      "P9. Gift cards, prepaid cards and other cash equivalents are treated as cash. A grant may be charged for them only after the Grants Accountant approves the purchase, and the site must keep a log of each card issued. Mark these invoices Escalate, even when a fund's rules allow the cost."
     ]}]
   },
   "CHF": {
@@ -332,7 +175,7 @@ const INVOICES = [
     expected: { status: ["needs_info"], fund: ["SSVF-V"], cite: ["62.34(a)(4)", "P6", "200.403(g)"] }, why: "No rent reasonableness note in the packet." },
   { id: "INV-14", site: "Valley", vendor: "Valley Grocers", payee: "Valley Grocers", payeeType: "Vendor", amount: 250, date: "2026-11-01", period: "2026-11", kind: "gift", client: null, description: "Ten $25 grocery gift cards for participant holiday event", backup: [...STD],
     analyst: { fund: "RIDGE", category: "Client-Flex", cost_type: "Program", service_period: "2026-11" },
-    expected: { status: ["not_allowed", "escalate"], fund: [null], cite: ["R3", "R1", "578.53(d)"] }, why: "Ridgeline bars gift cards; no other fund lists them." },
+    expected: { status: ["escalate"], fund: ["COC-SSO-V"], cite: ["P9", "578.53(e)(7)", "578.53"] }, why: "Ridgeline bars gift cards (R3). HUD CoC allows groceries (578.53(e)(7)), but FIN-07 P9 treats gift cards as cash and needs Grants Accountant approval." },
   { id: "INV-15", site: "Valley", vendor: "Valley Water & Power", payee: "Participant C-109", payeeType: "Participant", amount: 210, date: "2026-11-02", period: "2026-10", kind: "utility", client: "C-109", description: "Reimburse veteran for October utility bill they paid", backup: [...STD],
     analyst: { fund: "SSVF-V", category: "TFA-Utility", cost_type: "Program", service_period: "2026-10" },
     expected: { status: ["not_allowed"], fund: [null, "SSVF-V"], cite: ["62.34(b)(2)", "P8"] }, why: "SSVF utility payments must go directly to the utility company." }
@@ -444,6 +287,7 @@ Rules for your answer:
 - Follow policy FIN-07 for which document controls and which fund to charge first.
 - Trust the COMPUTED CHECKS. They come from code, not from you.
 - status must be one of: "allowed" (a fund at this site can pay it, as entered or as you suggest), "not_allowed" (no fund at this site can pay it as submitted), "needs_info" (a needed fact or document is missing), "escalate" (the documents conflict or do not cover it, so finance must decide).
+- Pick status by this rule, the same way every time: if a quoted rule explicitly bars this cost and no other fund at this site can pay it, status is "not_allowed". If a fund's rules allow the cost but FIN-07 requires approval first, status is "escalate" with ask type needs_approval, and suggested.fund is the fund that would pay once approved. Otherwise use "escalate" only when the documents conflict or none of them address the cost. Use "needs_info" only when a specific document or fact is missing.
 - Every quote must be copied word for word from the document text below, 8 to 40 words, no ellipses.
 - Write for a site analyst: plain words, short sentences.
 
@@ -465,9 +309,17 @@ DOCUMENTS:
 ${docs}
 
 Reply with only one JSON object in this shape:
-{"status":"allowed","suggested":{"fund":"SSVF-H","category":"TFA-Rent","cost_type":"Program","service_period":"2026-11"},"summary":"One sentence, under 20 words.","missed":["SSVF has already paid 6 of its 6 rent months for this veteran."],"deciding":{"doc":"38CFR62","section":"38 CFR 62.34(a)(1)","quote":"exact words from the document"},"precedence":"One sentence: which document controls here and why, citing FIN-07.","supporting":[{"doc":"FIN-07","section":"FIN-07 P4","quote":"exact words"}],"flags":[{"field":"fund","entered":"","suggested":"SSVF-H","why":"short reason"}],"funds":[{"fund":"SSVF-H","verdict":"pays","why":"Under the 9-month limit."},{"fund":"CHF-H","verdict":"not_needed","why":"Federal fund pays first (FIN-07 P4)."}],"question":"","explain":"Two or three sentences for someone new to grants: what the deciding rule means in everyday words and how it led to this answer."}
+{"status":"allowed","suggested":{"fund":"SSVF-H","category":"TFA-Rent","cost_type":"Program","service_period":"2026-11"},"summary":"One sentence, under 20 words.","missed":["SSVF has already paid 6 of its 6 rent months for this veteran."],"deciding":{"doc":"38CFR62","section":"38 CFR 62.34(a)(1)","quote":"exact words from the document"},"precedence":"One sentence: which document controls here and why, citing FIN-07.","supporting":[{"doc":"FIN-07","section":"FIN-07 P4","quote":"exact words"}],"flags":[{"field":"fund","entered":"","suggested":"SSVF-H","why":"short reason"}],"funds":[{"fund":"SSVF-H","verdict":"pays","why":"Under the 9-month limit."},{"fund":"CHF-H","verdict":"not_needed","why":"Federal fund pays first (FIN-07 P4)."}],"ask":null,"explain":"Two or three sentences for someone new to grants: what the deciding rule means in everyday words and how it led to this answer."}
 funds lists every fund at this site, in the order given under FUNDS AT THIS SITE, with verdict "pays" (the one fund you suggest), "cannot" (its documents bar this cost or a limit is reached), "not_needed" (could pay, but FIN-07 says another fund goes first), or "unclear" (its documents do not settle it). Each why is under 12 words, plain language.
-Use null for suggested.fund and suggested.category when no fund can pay. cost_type is "Program" or "Admin". Give at most 2 supporting quotes. Put a flag only on fields the analyst left blank or got wrong. missed lists up to 3 facts the analyst likely did not see or got wrong, each under 15 words, plain words, no section numbers or fund codes; [] if nothing was missed. question is the specific question for finance or the case manager when status is needs_info or escalate, otherwise "".`;
+Use null for suggested.fund and suggested.category when no fund can pay. cost_type is "Program" or "Admin". Give at most 2 supporting quotes. Put a flag only on fields the analyst left blank or got wrong. missed lists up to 3 facts the analyst likely did not see or got wrong, each under 15 words, plain words, no section numbers or fund codes; [] if nothing was missed. ask is null when status is "allowed". Otherwise ask is the question for finance, built from one fixed type; the page writes the sentence, so fill only the fields listed:
+- {"type":"missing_document","item":one of ${JSON.stringify([...STD, ...RENT_DOCS])},"fund":fund code,"doc":doc id,"quote":"exact words that require it"} with status "needs_info"
+- {"type":"missing_fact","fact":one of ${JSON.stringify(ASK_FACTS)},"fund":fund code,"doc":doc id,"quote":"exact words that depend on it"} with status "needs_info"
+- {"type":"no_fund_can_pay","doc":doc id,"quote":"exact words that bar this cost"} with status "not_allowed"
+- {"type":"needs_approval","fund":fund code that would pay,"doc":doc id,"quote":"exact words of the rule that would allow it","doc_b":"FIN-07","quote_b":"exact words of the policy that requires approval"} with status "escalate"
+- {"type":"rules_conflict","doc":doc id,"quote":"exact words that seem to allow it","doc_b":doc id,"quote_b":"exact words that seem to bar it"} with status "escalate"
+- {"type":"rules_silent","fund":fund code,"doc":doc id,"quote":"exact words of the closest rule"} with status "escalate"
+- {"type":"other","doc":doc id,"quote":"exact words of the rule you think applies","text":"one plain question, under 30 words"} only if no type above fits
+Every ask names the document you think governs and quotes it word for word, so finance can confirm it.`;
 }
 
 const norm = s => String(s || "").toLowerCase().replace(/[‘’“”"']/g, "").replace(/[^a-z0-9$%]+/g, " ").trim();
@@ -479,6 +331,39 @@ function verifyQuote(q, DOCS) {
   return parts.length > 0 && parts.every(p => hay.includes(p));
 }
 
+const ASK_FACTS = ["income level", "months of SSVF help already paid", "other housing subsidies", "household size", "service period", "unit rent"];
+const ASK_LABEL = { missing_document: "Missing document", missing_fact: "Missing fact", no_fund_can_pay: "No fund can pay", needs_approval: "Needs approval", rules_conflict: "Rules conflict", rules_silent: "Rules don't say", other: "Not a standard question" };
+const FAKE_SHORT = { "FIN-07": "Finance policy FIN-07", "CHF": "County agreement", "RIDGE": "Ridgeline letter" };
+// A stable name for the rule a quote comes from: eCFR section number, or the paragraph label in our own documents
+function citeLabel(doc, quote, DOCS) {
+  const loc = locateQuote({ doc, quote }, DOCS);
+  if (!loc) return null;
+  const sec = DOCS[doc].sections[loc.section];
+  if (sec.key && ECFR_TITLE[doc]) return `${ECFR_TITLE[doc]} CFR ${sec.key}`;
+  const m = loc.para >= 0 ? sec.paras[loc.para].match(/^([A-Z]+\d+)\./) : null;
+  return `${FAKE_SHORT[doc] || DOCS[doc].title}${m ? " " + m[1] : ""}`;
+}
+// Build the question for finance from the fixed templates. Same type and fields always give the same words.
+function renderAsk(ask, inv, DOCS) {
+  if (!ask || typeof ask !== "object" || !ASK_LABEL[ask.type]) return null;
+  const fund = ask.fund && FUNDS[ask.fund] ? fundShort(ask.fund) : "this fund";
+  const cite = citeLabel(ask.doc, ask.quote, DOCS);
+  const found = !!cite && verifyQuote({ doc: ask.doc, quote: ask.quote }, DOCS);
+  const c = cite || "the rule quoted below";
+  const cost = `${inv.vendor}, ${money(inv.amount)} (${inv.id})`;
+  const confirm = ` We think ${c} governs this. Please confirm.`;
+  let text;
+  switch (ask.type) {
+    case "missing_document": text = `The packet for ${cost} is missing the ${String(ask.item || "required backup").toLowerCase()}. ${fund} can't be charged without it.${confirm}`; break;
+    case "missing_fact": text = `We need the veteran's ${ASK_FACTS.includes(ask.fact) ? ask.fact : "missing detail"} to decide whether ${fund} can pay ${cost}.${confirm}`; break;
+    case "no_fund_can_pay": text = `No grant at the ${inv.site} site can pay ${cost}.${confirm} Then decide: pay it from unrestricted funds, or return it to the vendor?`; break;
+    case "needs_approval": { const cb = citeLabel(ask.doc_b, ask.quote_b, DOCS) || "finance policy"; text = `${fund} can pay ${cost} under ${c}, but ${cb} requires Grants Accountant approval first. Please confirm ${c} applies, and approve or decline.`; break; }
+    case "rules_conflict": { const cb = citeLabel(ask.doc_b, ask.quote_b, DOCS) || "another rule"; text = `${c} seems to allow ${cost}, but ${cb} seems to bar it, and FIN-07 doesn't say which wins. Please confirm which one governs.`; break; }
+    case "rules_silent": text = `The documents don't clearly say whether ${fund} can pay ${cost}. We think ${c} is the closest rule. Please confirm whether it applies.`; break;
+    default: text = `${String(ask.text || "").slice(0, 240)}${confirm}`;
+  }
+  return { type: ask.type, label: ASK_LABEL[ask.type], standard: ask.type !== "other", text, doc: ask.doc, quote: ask.quote, cite, found, doc_b: ask.doc_b, quote_b: ask.quote_b };
+}
 const ECFR_TITLE = { "2CFR200": 2, "38CFR62": 38, "24CFR578": 24 };
 function locateQuote(q, DOCS) {
   const doc = q && DOCS[q.doc];
@@ -646,6 +531,7 @@ Rules for your answer:
 - Follow policy FIN-07 for which document controls and which fund to charge first.
 - Trust the numbers from check_limits over your own arithmetic.
 - status must be one of: "allowed" (a fund at this site can pay it, as entered or as you suggest), "not_allowed" (no fund at this site can pay it as submitted), "needs_info" (a needed fact or document is missing), "escalate" (the documents conflict or do not cover it, so finance must decide).
+- Pick status by this rule, the same way every time: if a quoted rule explicitly bars this cost and no other fund at this site can pay it, status is "not_allowed". If a fund's rules allow the cost but FIN-07 requires approval first, status is "escalate" with ask type needs_approval, and suggested.fund is the fund that would pay once approved. Otherwise use "escalate" only when the documents conflict or none of them address the cost. Use "needs_info" only when a specific document or fact is missing.
 - Every quote must be copied word for word, 8 to 40 words, no ellipses.
 - Write for a site analyst who is not technical: plain words, short sentences.
 
@@ -832,7 +718,7 @@ function generatePractice(seed, n) {
 
 
 // ---------- Eval framework ----------
-const PROMPT_VERSION = "v9 (demo: skip funds by budget line, short trace)";
+const PROMPT_VERSION = "v11 (demo: FIN-07 P9 gift cards need approval)";
 
 // Code checks: graded by code, never by Claude. critical = a miss sinks the whole case.
 const CODE_CHECKS = [
@@ -894,288 +780,90 @@ const DIAG_BUCKETS = [
 <script>
 (function () {
   const DOCS = allDocs(JSON.parse(document.getElementById("regs-json").textContent));
-  // The demo queue: one invoice the check approves (after catching a missed fact), one no grant can pay
-  const QUEUE = ["INV-02", "INV-14"].map(id => INVOICES.find(i => i.id === id));
+  const TEST = ["INV-02", "INV-14"];
+  const KEY = "gc.consistency";
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  let runs = []; try { runs = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(runs)); } catch {} };
+  const S = { sample: undefined, busy: false, stop: false, note: "" };
 
-  const WORDS = { allowed: "OK to pay", not_allowed: "Can't pay this way", needs_info: "Need more info", escalate: "Ask finance" };
-  const FUND_NAME = { "SSVF-H": "SSVF", "COC-SSO-H": "HUD CoC services", "CHF-H": "County Housing Fund", "SSVF-D": "SSVF", "SSVF-V": "SSVF", "COC-SSO-V": "HUD CoC services", "RIDGE": "Ridgeline Foundation" };
-  const CAT_NAME = { "TFA-Rent": "Rent", "TFA-Rent-Fees": "Rent fees", "TFA-Utility": "Utility bill", "TFA-Security-Deposit": "Security deposit", "TFA-Utility-Deposit": "Utility deposit", "TFA-Moving": "Moving costs", "TFA-GHSA": "Housing stability items", "SS-Case-Management": "Case management", "SS-Transportation": "Transportation", "SS-Legal": "Legal services", "Client-Flex": "Client flexible help", "Staff-Training": "Staff training", "Admin": "Administration" };
-  const FIELDS = { fund: "Which grant pays", category: "Type of cost", cost_type: "Program or admin", service_period: "Service month" };
-  const monthName = v => { const m = /^(\d{4})-(\d{2})$/.exec(v || ""); return m ? new Date(+m[1], +m[2] - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" }) : v; };
-  const label = (k, v) => !v ? "" : k === "fund" ? (FUND_NAME[v] || v) : k === "category" ? (CAT_NAME[v] || v) : k === "service_period" ? monthName(v) : v;
-
-  const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
-  const ICON = {
-    paperwork: svg('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
-    person: svg('<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'),
-    count: svg('<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 13h2M14 13h2M8 17h2"/>'),
-    history: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
-    doc: svg('<path d="M4 5a2 2 0 0 1 2-2h5v18H6a2 2 0 0 0-2 2z"/><path d="M20 5a2 2 0 0 0-2-2h-5v18h5a2 2 0 0 1 2 2z"/>'),
-    write: svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/>'),
-    pivot: svg('<path d="M4 7h12l-3-3M20 17H8l3 3"/>'),
-    final: svg('<path d="m5 12.5 4.5 4.5L19 7.5"/>'),
-    bad: svg('<path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/>'),
-    flag: svg('<path d="M5 21V4h11l-2 4 2 4H5"/>'),
-    allowed: svg('<circle cx="12" cy="12" r="10"/><path d="m7.5 12.5 3 3 6-6.5"/>'),
-    not_allowed: svg('<circle cx="12" cy="12" r="10"/><path d="m8.5 8.5 7 7M15.5 8.5l-7 7"/>'),
-    needs_info: svg('<circle cx="12" cy="12" r="10"/><path d="M12 7.5v5.5M12 16.5v.01"/>'),
-    escalate: svg('<path d="M4 5h16v11H9l-5 4z"/><path d="M12 8.5v3M12 14v.01"/>')
-  };
-  const ERR = {
-    not_granted: "Claude isn't allowed on this page yet. Allow it from the page's permissions, then reload.",
-    sampling_disabled: "Claude isn't available for this account.",
-    rate_limited: "Too many checks at once. Wait a minute, then run it again.",
-    invalid_json: "The answer came back garbled. Run it again.",
-    refused: "Claude declined this check.",
-    session_expired: "Sign in again, then run it again."
-  };
-
-  const KEY = "gcc.demo.results";
-  const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
-  const keep = () => { try { localStorage.setItem(KEY, JSON.stringify(S.results)); } catch {} };
-  const S = { compact: true, sample: undefined, tools: false, run: null, results: load(), cur: null, error: null, drag: null };
-  const curInv = () => QUEUE.find(i => i.id === S.cur) || null;
-
-  (async () => {
-    try { S.sample = window.claude && window.claude.use ? await window.claude.use("sample") : null; } catch { S.sample = null; }
-    if (S.sample) { try { const l = await S.sample.limits(); S.tools = !!(l && l.tools); } catch { S.tools = false; } }
-    render();
-  })();
-
-  const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const monLabel = (m, i) => { const [y, mo] = m.split("-"); return MON[+mo - 1] + (i === 0 || mo === "01" ? " '" + y.slice(2) : ""); };
-  function histStrip(h, fresh) {
-    if (!h || !h.found) return "";
-    const over = !h.within_limit, used = h.used_in_current_12_month_period;
-    const cells = h.last_12_months.map((m, i) => {
-      const now = m === h.this_invoice_month, paid = h.paid_months.includes(m);
-      return `<div class="cell ${paid ? "paid" : ""} ${now ? "now" + (over ? " over" : "") : ""}" style="${fresh ? `animation-delay:${i * 70}ms` : ""}" title="${monthName(m)}: ${now ? "this invoice" : paid ? "paid by SSVF" : "not paid"}"></div>`;
-    }).join("");
-    const labs = h.last_12_months.map((m, i) => `<div class="mlab ${m === h.this_invoice_month ? "now" : ""}">${monLabel(m, i)}</div>`).join("");
-    return `<div class="hist${fresh ? " grow" : ""}" role="img" aria-label="${used} of ${h.limit_per_12_months} ${h.assistance} months already paid in the last 12 months">
-      <div class="hist-cap ${over ? "over" : "ok"}">${used} of ${h.limit_per_12_months} ${esc(h.assistance)} months used${over ? ". This month would go over the limit" : ". This month fits under the limit"}</div>
-      <div class="cells">${cells}</div><div class="cells">${labs}</div>
-      <div class="hlegend"><span><i class="paid"></i>Paid by SSVF</span><span><i></i>Not paid</span><span><i class="now ${over ? "" : "ok"}"></i>This invoice</span><span>Limit: ${h.limit_per_12_months} months in any 12 (${esc(String(h.income_level || "").toLowerCase())})</span></div>
-    </div>`;
+  // What has to match across runs: the answer, the fund, and the finance question (type, fields, rule it cites, final words)
+  function outcome(inv, r) {
+    const a = r.status === "allowed" ? null : renderAsk(r.ask, inv, DOCS);
+    return {
+      status: r.status, fund: (r.suggested && r.suggested.fund) || "none",
+      askType: a ? a.type : "none", cite: a ? (a.cite || "quote not found") : "", question: a ? a.text : (r.question || ""),
+      quoteOk: a ? a.found : true, deciding: verifyQuote(r.deciding, DOCS)
+    };
   }
-  const srcClass = s => /eCFR/.test(s) ? "official" : /fake/.test(s) ? "fakedoc" : "";
-  const qblock = (q, found) => { const loc = locateQuote(q, DOCS); return `<blockquote class="tq">"${esc(q.quote)}"<span class="${found ? "found" : "notfound"}">${found ? "Exact match in the source" : "Not found in the source. Read the rule yourself"}</span><span class="qlinks">${loc ? `<button type="button" class="qlink" data-doc="${esc(q.doc)}" data-quote="${esc(q.quote)}">See it in the document</button>` : ""}${loc && loc.url ? `<a class="qlink" href="${esc(loc.url)}" target="_blank" rel="noopener">Open ${esc(q.section || "the section")} on eCFR</a>` : ""}</span></blockquote>`; };
-  // Short view for presenting: setup steps fold into one Background row; only story steps keep their text
-  const STORY_DOCS = ["38CFR62", "24CFR578", "CHF", "RIDGE"];
-  const isBackground = e => ["paperwork", "count", "person"].includes(e.kind) || e.kind === "write" || (e.kind === "doc" && !STORY_DOCS.some(d => (e.source || "") === (DOC_SOURCE[d] || "#")));
-  const BG_WORD = { paperwork: e => /problem/.test(e.title) ? e.title : "Paperwork complete", count: () => "Limits counted", person: () => "Veteran record pulled", doc: e => e.title.replace(/^Reading/, "Read"), write: () => "" };
-  function compactTrace(t) {
-    const out = []; let bg = null;
-    const pivotQuotes = t.filter(e => e.kind === "pivot" && e.data && e.data.quote).map(e => norm(e.data.quote));
-    for (const e of t) {
-      if (isBackground(e)) {
-        if (e.id === "write") { out.push({ ...e, why: "", detail: "" }); continue; }
-        if (!bg) { bg = { id: "bg", kind: "paperwork", title: "Background checks", items: [], state: "done", fresh: false }; out.push(bg); }
-        bg.items.push(e);
-        if (e.fresh) bg.fresh = true;
-        if (e.state === "running") bg.state = "running";
-        continue;
+  const sig = o => [o.status, o.fund, o.askType, o.cite, o.question].join(" | ");
+
+  async function runOne(inv, tier) {
+    const t0 = Date.now();
+    const opts = { tools: makeTools(inv, DOCS, () => {}), modelTier: tier };
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const r = await S.sample.json(buildToolPrompt(inv, DOCS), opts);
+        if (!r || !r.status) throw { code: "invalid_json" };
+        return { inv: inv.id, tier, seconds: Math.round((Date.now() - t0) / 1000), prompt: PROMPT_VERSION, ...outcome(inv, r) };
+      } catch (e) {
+        if (e && e.code === "rate_limited" && attempt === 0) { S.note = "Rate limited. Waiting 30 seconds."; render(); await new Promise(r => setTimeout(r, 30000)); S.note = ""; continue; }
+        return { inv: inv.id, tier, seconds: Math.round((Date.now() - t0) / 1000), prompt: PROMPT_VERSION, error: (e && (e.code || e.message)) || "failed" };
       }
-      if (e.kind === "final" && e.quote && pivotQuotes.includes(norm(e.quote))) continue;   // already shown on the pivot
-      out.push({ ...e, why: e.kind === "history" ? e.why : "", detail: e.kind === "doc" ? "" : e.detail, short: true });
-    }
-    if (bg) { bg.detail = bg.items.filter(e => e.state !== "running").map(e => (BG_WORD[e.kind] || (x => x.title))(e)).filter(Boolean).join(" · "); bg.bad = bg.items.some(e => / problem/.test(e.title)); }
-    return out;
-  }
-  const traceHTML = t => (S.compact ? compactTrace(t) : t).map(step).join("");
-  const CAT = { paperwork: "check", count: "check", person: "vet", history: "vet", doc: "rule", final: "rule", write: "claude", pivot: "pivot" };
-  const CAT_LABEL = { check: "Page check", vet: "Veteran record", rule: "Rules", claude: "Claude", pivot: "Change of path" };
-  const finding = e => e.state !== "done" ? "" : /^(Paperwork problem|SSVF .* limit reached|Over a limit)/.test(e.title) ? " find-bad" : /^(Paperwork complete|Within the SSVF|All limits OK)/.test(e.title) ? " find-ok" : "";
-  const step = e => { const c = CAT[e.kind] || "claude"; return `<li class="cat-${c} st-${e.state || "done"}${e.kind === "final" && e.state !== "error" ? " st-final" : ""}${e.kind === "pivot" && e.data && e.data.next_fund === "none" ? " dead" : ""}${finding(e)}${e.fresh ? " enter" : ""}"><span class="ic">${e.state === "error" ? ICON.bad : ICON[e.kind] || ICON.final}</span><div class="sb"><span class="cat">${CAT_LABEL[c]}</span><div class="t">${esc(e.title)}${e.source ? e.source.split(" · ").map(x => `<span class="src ${srcClass(x)}">${esc(x)}</span>`).join("") : ""}</div>${e.why ? `<div class="why"><b>Why:</b> ${esc(e.why)}</div>` : ""}${e.kind === "history" && e.data && e.data.found ? histStrip(e.data, e.grow) : e.detail ? `<div class="d">${e.kind === "pivot" ? "<b>Because:</b> " : ""}${esc(e.detail)}</div>` : ""}${e.quote ? qblock({ doc: e.doc, section: e.detail, quote: e.quote }, e.found) : ""}${e.kind === "pivot" && e.data && e.data.skipped ? `<div class="d"><b>Skipped:</b> ${esc(e.data.skipped)}</div>` : ""}${e.kind === "pivot" && e.data && e.data.quote ? qblock(e.data, e.data.quote_found_in_source) : ""}</div></li>`; };
-
-  // One step at a time: a step appears, waits for its own result, shows the result (text, chart or quote),
-  // and stays alone on screen for a reading pause before the next step appears.
-  const PACE = 1600, RESULT_DELAY = 700;
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
-  let queue = [], pumping = null;
-  const dwell = e => PACE + (e.data || e.quote ? 1400 : 0) + Math.min(String(e.detail || "").length * 12, 1200) + (e.why ? 600 : 0);
-  function show(ev) {
-    if (!S.run) return false;
-    const t = S.run.trace, i = t.findIndex(e => e.id === ev.id);
-    const grows = !!ev.data && !(i >= 0 && t[i].data);
-    if (i >= 0) t[i] = { ...t[i], ...ev, grow: grows }; else t.push({ ...ev, fresh: true, grow: grows });
-    const el = $("#trace"); if (el) { el.innerHTML = traceHTML(t); t.forEach(e => { e.fresh = false; e.grow = false; }); }
-    return i < 0;
-  }
-  // Wait until this step's result is in the queue (or the run has ended), then take it out of the queue.
-  async function resultFor(id) {
-    for (;;) {
-      const k = queue.findIndex(e => e.id === id && e.state && e.state !== "running");
-      if (k >= 0) return queue.splice(k, 1)[0];
-      if (!S.run || S.run.ended) return null;
-      await sleep(100);
     }
   }
-  // The first await makes pump() return before it can finish, so `pumping` is always assigned before it is cleared.
-  async function pump() {
-    await null;
-    try {
-      while (queue.length) {
-        const ev = queue.shift();
-        if (!show(ev)) continue;                       // update to a step already on screen: no pause
-        let shown = S.run && S.run.trace.find(e => e.id === ev.id);
-        const quick = S.compact && isBackground(ev);
-        if (ev.state === "running") {
-          await sleep(quick ? 150 : RESULT_DELAY);
-          const res = await resultFor(ev.id);
-          if (res) { show(res); shown = S.run && S.run.trace.find(e => e.id === ev.id); }
-        }
-        await sleep(quick ? 450 : shown ? dwell(shown) : PACE);
-      }
-    } finally { pumping = null; }
-  }
-  function log(ev) { queue.push(ev); if (!pumping) pumping = pump(); }
-  async function drain() { while (pumping) { try { await pumping; } catch { pumping = null; } } }
 
-  async function check() {
-    const INV = curInv();
-    if (!INV || !S.sample || S.run) return;
-    S.run = { id: INV.id, trace: [], t0: Date.now() }; S.error = null; queue = []; pumping = null;
-    render();
-    const timer = setInterval(() => { const el = $("#elapsed"); if (el && S.run) { const n = Math.round((Date.now() - S.run.t0) / 1000); el.textContent = n + (n === 1 ? " second" : " seconds"); } }, 1000);
-    let writing = false;
-    const onText = ({ text }) => { if (!writing && text.includes("{")) { writing = true; log({ id: "write", kind: "write", title: "Writing the answer for the analyst", state: "running" }); } };
-    try {
-      let r;
-      if (S.tools) {
-        log({ id: "plan", kind: "write", title: "Claude is deciding what to check", state: "running" });
-        r = await S.sample.json(buildToolPrompt(INV, DOCS), { onText, tools: makeTools(INV, DOCS, ev => { log({ id: "plan", state: "done", title: "Claude planned the check" }); log(ev); }) });
-      } else {
-        oneShotSteps(INV).forEach((s, n) => log({ id: "pre" + n, ...s }));
-        log({ id: "plan", kind: "write", title: "Claude is reading the rules", state: "running" });
-        r = await S.sample.json(buildPrompt(INV, DOCS), { onText, cache: false });
-        log({ id: "plan", state: "done", title: "Claude read the rules" });
-      }
-      if (!r || typeof r !== "object" || !r.status) throw { code: "invalid_json" };
-      log({ id: "write", kind: "write", title: "Claude wrote the answer for the analyst", state: "done" });
-      // One step per quote Claude used: the exact words, where they came from, and whether the page found them in the source
-      const quotes = [r.deciding, ...(r.supporting || []).slice(0, 2)].filter(q => q && q.quote);
-      quotes.forEach((q, n) => {
-        const found = verifyQuote(q, DOCS);
-        log({ id: "quote" + n, kind: "final", title: n === 0 ? "The rule that decides it" : "A supporting rule", source: DOC_SOURCE[q.doc] || "", doc: q.doc, detail: q.section || "", quote: q.quote, found, state: found ? "done" : "error" });
-      });
-      const ok = quotes.length ? verifyQuote(r.deciding, DOCS) : false;
-      r.verified = ok; S.run.ended = true; await drain(); r.trace = S.run.trace.map(({ fresh, ...e }) => e); r.seconds = Math.round((Date.now() - S.run.t0) / 1000);
-      S.results[INV.id] = r; keep();
-    } catch (e) {
-      if (e && e.code === "tools_unavailable") { S.tools = false; S.error = "Step-by-step mode isn't available here. Run it again for the quick check."; }
-      else if (e && e.code !== "cancelled") S.error = ERR[e && e.code] || "The check didn't finish. Run it again.";
-      if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) S.sample = null;
-    } finally { if (S.run) S.run.ended = true; await drain(); clearInterval(timer); S.run = null; render(); }
+  async function start() {
+    if (S.busy || !S.sample) return;
+    const n = Math.max(1, Math.min(50, Number($("#n").value) || 20)), tier = $("#tier").value;
+    const ids = TEST.filter(id => $("#c-" + id).checked);
+    S.busy = true; S.stop = false; render();
+    for (let k = 0; k < n && !S.stop; k++) for (const id of ids) {
+      if (S.stop) break;
+      S.note = `Run ${k + 1} of ${n}: ${id}`; render();
+      runs.push(await runOne(INVOICES.find(i => i.id === id), tier)); save(); render();
+    }
+    S.busy = false; S.note = S.stop ? "Stopped." : "Done."; render();
   }
 
-  function open(id) {
-    if (S.run) return;
-    S.cur = id; S.error = null; render();
-    if (!S.results[id] && S.sample) check();
-  }
-
-  function statusText(r) {
-    const sug = r && r.suggested;
-    return r.status === "allowed" && sug && sug.fund ? `Pay from ${FUND_NAME[sug.fund] || sug.fund}` : WORDS[r.status] || r.status;
-  }
-
-  function renderQueue() {
-    const waiting = QUEUE.filter(i => !S.results[i.id]).length;
-    return `<section class="card"><div class="queue-head"><h2>Invoices to code</h2><span class="qcount">${waiting} waiting</span></div>
-      <ul class="qlist">${QUEUE.map(i => {
-        const r = S.results[i.id], running = S.run && S.run.id === i.id;
-        const chip = running ? '<span class="chip c-run">Checking...</span>' : r ? `<span class="chip c-${esc(r.status)}">Checked: ${esc(statusText(r))}</span>` : '<span class="chip">Needs coding</span>';
-        return `<li class="qrow ${S.cur === i.id ? "current" : ""} ${S.run ? "locked" : ""}" draggable="${S.run ? "false" : "true"}" data-id="${i.id}" tabindex="0" role="button" aria-label="Check ${esc(i.vendor)}, ${money(i.amount)}">
-          <div class="qtop"><span>${esc(i.vendor)}</span><span class="num">${money(i.amount)}</span></div>
-          <div class="qdesc">${esc(i.description)}</div>
-          <div class="qmeta"><span>${esc(i.site)} site</span><span>${esc(i.id)}</span>${chip}</div></li>`;
-      }).join("")}</ul>
-      <p class="qhint">Drag an invoice into the check, or click it.</p>
-    </section>`;
+  function report(id) {
+    const rs = runs.filter(r => r.inv === id && r.prompt === PROMPT_VERSION);
+    if (!rs.length) return `<section class="card"><h2>${id}</h2><p class="hint">No runs yet with prompt ${esc(PROMPT_VERSION)}.</p></section>`;
+    const ok = rs.filter(r => !r.error), errs = rs.length - ok.length;
+    const groups = {}; ok.forEach(r => { const k = sig(r); (groups[k] = groups[k] || { r, n: 0 }).n++; });
+    const rows = Object.values(groups).sort((a, b) => b.n - a.n);
+    const qs = new Set(ok.map(r => r.question)).size;
+    const pass = rows.length === 1;
+    return `<section class="card"><h2>${id}</h2>
+      <div class="score ${pass ? "pass" : "fail"}">${ok.length} runs: ${rows.length} different outcome${rows.length === 1 ? "" : "s"}, ${qs} different finance question${qs === 1 ? "" : "s"}${errs ? ` (${errs} failed)` : ""}</div>
+      <table><thead><tr><th>Runs</th><th>Answer</th><th>Fund</th><th>Question type</th><th>Rule cited</th><th>Question for finance</th></tr></thead><tbody>
+      ${rows.map(({ r, n }) => `<tr><td class="n">${n} of ${ok.length}</td><td>${esc(r.status)}</td><td>${esc(r.fund)}</td><td>${esc(r.askType)}</td><td class="${r.quoteOk ? "" : "bad"}">${esc(r.cite)}</td><td>${esc(r.question) || '<span class="hint">none</span>'}</td></tr>`).join("")}
+      </tbody></table>
+      <details><summary>Every run</summary><table><thead><tr><th>#</th><th>Tier</th><th>Seconds</th><th>Answer</th><th>Question type</th><th>Deciding quote found</th><th>Error</th></tr></thead><tbody>
+      ${rs.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.tier)}</td><td>${r.seconds}</td><td>${esc(r.status || "")}</td><td>${esc(r.askType || "")}</td><td>${r.error ? "" : r.deciding ? "yes" : '<span class="bad">no</span>'}</td><td class="bad">${esc(r.error || "")}</td></tr>`).join("")}
+      </tbody></table></details></section>`;
   }
 
   function render() {
-    const INV = curInv();
-    const html = INV ? renderTool(INV) : `<div class="drop" id="drop">${'<div>' + svg('<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/>') + '<b>Drop an invoice here</b>Grant Coding Check reads the invoice, the veteran\'s history and the grant rules, then suggests the coding.</div>'}</div>`;
-    $("#app").innerHTML = `<div class="col">${renderQueue()}</div><div class="col tool" id="tool">${html}</div>`;
-    bind();
-  }
-
-  function bind() {
-    document.querySelectorAll(".qrow").forEach(row => {
-      const id = row.dataset.id;
-      row.addEventListener("click", () => open(id));
-      row.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(id); } });
-      row.addEventListener("dragstart", e => { if (S.run) { e.preventDefault(); return; } S.drag = id; row.classList.add("dragging"); try { e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move"; } catch {} });
-      row.addEventListener("dragend", () => { S.drag = null; row.classList.remove("dragging"); const t = $("#tool"); if (t) t.classList.remove("over"); });
-    });
-    const tool = $("#tool");
-    tool.addEventListener("dragover", e => { if (!S.drag || S.run) return; e.preventDefault(); tool.classList.add("over"); });
-    tool.addEventListener("dragleave", e => { if (!tool.contains(e.relatedTarget)) tool.classList.remove("over"); });
-    tool.addEventListener("drop", e => { e.preventDefault(); tool.classList.remove("over"); let id = S.drag; try { id = e.dataTransfer.getData("text/plain") || id; } catch {} if (id && QUEUE.some(i => i.id === id)) open(id); });
-    const b = $("#go"); if (b) b.addEventListener("click", check);
-    const tm = $("#tmode"); if (tm) tm.addEventListener("click", () => { S.compact = !S.compact; render(); });
-    const x = $("#reset"); if (x) x.addEventListener("click", () => { S.results = {}; S.cur = null; S.error = null; try { localStorage.removeItem(KEY); } catch {} render(); window.scrollTo(0, 0); });
-  }
-
-  function renderTool(INV) {
-    const r = S.results[INV.id], sug = r && r.suggested ? r.suggested : null;
-    const rows = Object.keys(FIELDS).map(k => {
-      const entered = INV.analyst[k], sv = sug ? (sug[k] ?? null) : undefined, changed = sug && String(sv ?? "") !== String(entered ?? "");
-      const ent = entered ? `<span class="${changed ? "was" : ""}">${esc(label(k, entered))}</span>` : '<span class="blank">Left blank</span>';
-      return `<tr><th scope="row">${FIELDS[k]}</th><td>${ent}</td>${sug ? `<td><span class="use ${changed ? "changed" : ""}">${esc(sv ? label(k, sv) : k === "fund" ? "No grant can pay" : "None")}</span></td>` : ""}</tr>`;
-    }).join("");
-    const date = new Date(INV.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
-    let html = `<section class="card">
-      <div class="inv-top"><p class="vendor">${esc(INV.vendor)}</p><span class="amount num">${money(INV.amount)}</span></div>
-      <p class="desc">${esc(INV.description)}</p>
-      <dl class="facts"><div><dt>Site</dt><dd>${esc(INV.site)}</dd></div><div><dt>Pay to</dt><dd>${esc(INV.payee)}</dd></div><div><dt>Veteran</dt><dd>${INV.client ? esc(INV.client) : "None"}</dd></div><div><dt>Invoice date</dt><dd class="num">${date}</dd></div></dl>
-      <h2>${sug ? "Coding" : "Analyst's coding"}</h2>
-      <table class="coding"><thead><tr><th>Field</th><th>Analyst entered</th>${sug ? "<th>Check suggests</th>" : ""}</tr></thead><tbody>${rows}</tbody></table>
-      <div class="go">
-        <button class="btn${r && !S.run ? " quiet" : ""}" id="go" type="button" ${S.sample && !S.run ? "" : "disabled"}>${S.run ? "Checking..." : r ? "Run again" : "Run grant check"}</button>
-        ${!S.run && (Object.keys(S.results).length || S.error) ? '<button class="btn quiet" id="reset" type="button">Reset demo</button>' : ""}
-        ${S.sample === null ? '<span class="hint">Open this page on claude.ai to run the check.</span>' : S.sample === undefined ? '<span class="hint">Getting ready...</span>' : ""}
+    $("#app").innerHTML = `<section class="card"><h2>Run the test</h2><div class="controls">
+        ${TEST.map(id => `<label><input type="checkbox" id="c-${id}" checked ${S.busy ? "disabled" : ""}> ${id}</label>`).join("")}
+        <label>Runs each <input type="number" id="n" value="${$("#n") ? $("#n").value : 20}" min="1" max="50" ${S.busy ? "disabled" : ""}></label>
+        <label>Model <select id="tier" ${S.busy ? "disabled" : ""}><option value="default">default</option><option value="quick">quick (cheaper)</option></select></label>
+        <button class="btn" id="go" ${S.busy || !S.sample ? "disabled" : ""}>Start</button>
+        <button class="btn quiet" id="stop" ${S.busy ? "" : "disabled"}>Stop after this run</button>
+        <button class="btn quiet" id="clear" ${S.busy || !runs.length ? "disabled" : ""}>Clear results</button>
       </div>
-    </section>`;
-
-    const live = S.run && S.run.id === INV.id;
-    const trace = live ? S.run.trace : r && r.trace;
-    if (live || (trace && trace.length)) html += `<section class="card"><div class="trace-head"><h2>What the check looked at</h2><button type="button" class="btn quiet" id="tmode">${S.compact ? "Show every step" : "Show the short version"}</button></div><div class="tlegend">${["rule","vet","check","claude","pivot"].map(c => `<span><i style="background:var(--c-${c})"></i>${CAT_LABEL[c]}</span>`).join("")}</div><ol class="trace" id="trace" aria-live="polite">${traceHTML(trace)}</ol>${live ? '<p class="elapsed" id="elapsed">0 seconds</p>' : r && r.seconds ? `<p class="elapsed">Took ${r.seconds} seconds</p>` : ""}</section>`;
-
-    if (S.error) html += `<section class="card"><p class="err">${esc(S.error)}${r ? " The last answer is still below." : ""}</p></section>`;
-
-    if (r && !live) {
-      const what = statusText(r);
-      const missed = Array.isArray(r.missed) ? r.missed.slice(0, 3) : [];
-      const d = r.deciding || {};
-      html += `<section class="card" aria-live="polite">
-        <div class="verdict v-${esc(r.status)}">${ICON[r.status] || ""}<div><p class="what">${esc(what)}</p><p>${esc(r.summary)}</p></div></div>
-        ${missed.length ? `<h3>What the check caught</h3><ul class="missed">${missed.map(m => `<li>${ICON.flag}<span>${esc(m)}</span></li>`).join("")}</ul>` : ""}
-        ${r.question ? `<p><b>Question for finance:</b> ${esc(r.question)}</p>` : ""}
-        ${d.quote ? `<details><summary>The rule behind this</summary><blockquote><div class="qsrc"><b>${esc(d.section || d.doc)}</b><span class="${r.verified ? "found" : "notfound"}">${r.verified ? "Matches the source text" : "Not found in the source"}</span></div>${esc(d.quote)}</blockquote>${r.precedence ? `<p class="why"><b>Why this rule wins:</b> ${esc(r.precedence)}</p>` : ""}</details>` : ""}
-      </section>`;
-    }
-
-    return html;
+      <p class="hint">${S.sample === null ? "Open this page on claude.ai to run it." : S.sample === undefined ? "Getting ready..." : esc(S.note) || `Prompt ${esc(PROMPT_VERSION)}. Each run calls Claude several times, so 20 runs of both invoices takes a while.`}</p></section>
+      ${TEST.map(report).join("")}`;
+    $("#go").onclick = start;
+    $("#stop").onclick = () => { S.stop = true; S.note = "Stopping after this run."; render(); };
+    $("#clear").onclick = () => { runs = []; save(); render(); };
   }
-  const markQuote = (p, q) => { const k = p.toLowerCase().indexOf(String(q || "").toLowerCase().replace(/^["“]|["”]$/g, "").trim()); const n = String(q || "").replace(/^["“]|["”]$/g, "").trim().length; return k < 0 || !n ? esc(p) : esc(p.slice(0, k)) + "<mark>" + esc(p.slice(k, k + n)) + "</mark>" + esc(p.slice(k + n)); };
-  // Document viewer: the full document with the quoted paragraph highlighted
-  function showDoc(docId, quote) {
-    const doc = DOCS[docId]; if (!doc) return;
-    const loc = locateQuote({ doc: docId, quote }, DOCS);
-    let dlg = $("#docview");
-    if (!dlg) { dlg = document.createElement("dialog"); dlg.id = "docview"; document.body.appendChild(dlg); dlg.addEventListener("click", ev => { if (ev.target === dlg || ev.target.closest("[data-close]")) dlg.close(); }); }
-    dlg.innerHTML = `<div class="dv"><div class="dvh"><div><b>${esc(doc.title)}</b><div class="hint">${esc(DOC_SOURCE[docId] || "")}${doc.src ? ` · <a href="${esc(doc.src)}" target="_blank" rel="noopener">Source on eCFR</a>` : ""}</div></div><button type="button" class="btn quiet" data-close>Close</button></div>
-      ${doc.sections.map((sec, si) => `<h4>${esc(sec.head)}</h4>${sec.paras.map((p, pi) => loc && loc.section === si && loc.para === pi ? `<p class="hit">${markQuote(p, quote)}</p>` : `<p>${esc(p)}</p>`).join("")}`).join("")}</div>`;
-    dlg.showModal();
-    const hit = dlg.querySelector(".hit"); if (hit) hit.scrollIntoView({ block: "center" });
-  }
-  document.addEventListener("click", ev => { const b = ev.target.closest && ev.target.closest("button.qlink"); if (b) showDoc(b.dataset.doc, b.dataset.quote); });
   render();
+  (async () => {
+    try { S.sample = window.claude && window.claude.use ? await window.claude.use("sample") : null; } catch { S.sample = null; }
+    render();
+  })();
 })();
 </script>

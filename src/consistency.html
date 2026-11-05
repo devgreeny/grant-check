@@ -1,0 +1,134 @@
+<meta charset="utf-8">
+<title>Grant Check Consistency</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Roboto:wght@400;500;700&display=swap">
+<style>
+/* Consistency test: run the same invoice many times and count how many different answers and finance questions come back. */
+:root {
+  --ground: #EEF1F5; --paper: #FFFFFF; --panel: #F5F7FA; --ink: #1B2430; --soft: #5A6573; --rule: #D6DCE4;
+  --navy: #003366; --navy-deep: #1C3664; --on-navy: #FFFFFF; --on-navy-soft: #B9C8DC; --blue: #0074A6; --gold: #E9B732;
+  --ok: #1D6B3E; --ok-tint: #E3F2E8; --no: #B42318; --no-tint: #FBE7E4;
+  --head: "Oswald", "Arial Narrow", sans-serif; --body: "Roboto", system-ui, sans-serif;
+}
+* { box-sizing: border-box }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.5 var(--body) }
+.shell { background: var(--navy); color: var(--on-navy); border-bottom: 4px solid var(--gold) }
+.in { max-width: 1100px; margin: 0 auto; padding: 14px 16px }
+.brand { font: 600 20px/1.2 var(--head); text-transform: uppercase; letter-spacing: .14em; margin: 0 }
+.sub { color: var(--on-navy-soft); font-size: 13px; margin-top: 2px }
+main { max-width: 1100px; margin: 0 auto; padding: 16px }
+.card { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 20px; margin-bottom: 16px }
+h2 { font: 500 16px/1.2 var(--head); text-transform: uppercase; letter-spacing: .1em; color: var(--navy-deep); margin: 0 0 10px }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center }
+label { display: inline-flex; gap: 6px; align-items: center }
+input[type=number] { width: 64px; font: inherit; padding: 4px 6px }
+select { font: inherit; padding: 4px 6px }
+.btn { font: 500 15px var(--body); border-radius: 6px; padding: 8px 16px; cursor: pointer; border: 1px solid transparent; background: var(--blue); color: #fff }
+.btn.quiet { background: var(--paper); color: var(--ink); border-color: var(--rule) }
+.btn:disabled { opacity: .45; cursor: not-allowed }
+.hint { color: var(--soft); font-size: 13px }
+.score { font-size: 18px; font-weight: 700; margin: 4px 0 10px }
+.score.pass { color: var(--ok) } .score.fail { color: var(--no) }
+table { border-collapse: collapse; width: 100%; font-size: 13px }
+th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--rule) }
+th { background: var(--navy); color: #fff; font-weight: 500 }
+td.n { font-weight: 700; white-space: nowrap }
+.bad { color: var(--no); font-weight: 600 }
+details { margin-top: 10px } summary { cursor: pointer; color: var(--blue) }
+</style>
+<header class="shell"><div class="in"><h1 class="brand">Grant Check: consistency test</h1><div class="sub">Runs the same invoice many times. Target: one answer and one finance question per invoice. Fake data.</div></div></header>
+<main id="app"></main>
+<script type="application/json" id="regs-json">/*REGS*/</script>
+<script>
+/*LOGIC*/
+</script>
+<script>
+(function () {
+  const DOCS = allDocs(JSON.parse(document.getElementById("regs-json").textContent));
+  const TEST = ["INV-02", "INV-14"];
+  const KEY = "gc.consistency";
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  let runs = []; try { runs = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(runs)); } catch {} };
+  const S = { sample: undefined, busy: false, stop: false, note: "" };
+
+  // What has to match across runs: the answer, the fund, and the finance question (type, fields, rule it cites, final words)
+  function outcome(inv, r) {
+    const a = r.status === "allowed" ? null : renderAsk(r.ask, inv, DOCS);
+    return {
+      status: r.status, fund: (r.suggested && r.suggested.fund) || "none",
+      askType: a ? a.type : "none", cite: a ? (a.cite || "quote not found") : "", question: a ? a.text : (r.question || ""),
+      quoteOk: a ? a.found : true, deciding: verifyQuote(r.deciding, DOCS)
+    };
+  }
+  const sig = o => [o.status, o.fund, o.askType, o.cite, o.question].join(" | ");
+
+  async function runOne(inv, tier) {
+    const t0 = Date.now();
+    const opts = { tools: makeTools(inv, DOCS, () => {}), modelTier: tier };
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const r = await S.sample.json(buildToolPrompt(inv, DOCS), opts);
+        if (!r || !r.status) throw { code: "invalid_json" };
+        return { inv: inv.id, tier, seconds: Math.round((Date.now() - t0) / 1000), prompt: PROMPT_VERSION, ...outcome(inv, r) };
+      } catch (e) {
+        if (e && e.code === "rate_limited" && attempt === 0) { S.note = "Rate limited. Waiting 30 seconds."; render(); await new Promise(r => setTimeout(r, 30000)); S.note = ""; continue; }
+        return { inv: inv.id, tier, seconds: Math.round((Date.now() - t0) / 1000), prompt: PROMPT_VERSION, error: (e && (e.code || e.message)) || "failed" };
+      }
+    }
+  }
+
+  async function start() {
+    if (S.busy || !S.sample) return;
+    const n = Math.max(1, Math.min(50, Number($("#n").value) || 20)), tier = $("#tier").value;
+    const ids = TEST.filter(id => $("#c-" + id).checked);
+    S.busy = true; S.stop = false; render();
+    for (let k = 0; k < n && !S.stop; k++) for (const id of ids) {
+      if (S.stop) break;
+      S.note = `Run ${k + 1} of ${n}: ${id}`; render();
+      runs.push(await runOne(INVOICES.find(i => i.id === id), tier)); save(); render();
+    }
+    S.busy = false; S.note = S.stop ? "Stopped." : "Done."; render();
+  }
+
+  function report(id) {
+    const rs = runs.filter(r => r.inv === id && r.prompt === PROMPT_VERSION);
+    if (!rs.length) return `<section class="card"><h2>${id}</h2><p class="hint">No runs yet with prompt ${esc(PROMPT_VERSION)}.</p></section>`;
+    const ok = rs.filter(r => !r.error), errs = rs.length - ok.length;
+    const groups = {}; ok.forEach(r => { const k = sig(r); (groups[k] = groups[k] || { r, n: 0 }).n++; });
+    const rows = Object.values(groups).sort((a, b) => b.n - a.n);
+    const qs = new Set(ok.map(r => r.question)).size;
+    const pass = rows.length === 1;
+    return `<section class="card"><h2>${id}</h2>
+      <div class="score ${pass ? "pass" : "fail"}">${ok.length} runs: ${rows.length} different outcome${rows.length === 1 ? "" : "s"}, ${qs} different finance question${qs === 1 ? "" : "s"}${errs ? ` (${errs} failed)` : ""}</div>
+      <table><thead><tr><th>Runs</th><th>Answer</th><th>Fund</th><th>Question type</th><th>Rule cited</th><th>Question for finance</th></tr></thead><tbody>
+      ${rows.map(({ r, n }) => `<tr><td class="n">${n} of ${ok.length}</td><td>${esc(r.status)}</td><td>${esc(r.fund)}</td><td>${esc(r.askType)}</td><td class="${r.quoteOk ? "" : "bad"}">${esc(r.cite)}</td><td>${esc(r.question) || '<span class="hint">none</span>'}</td></tr>`).join("")}
+      </tbody></table>
+      <details><summary>Every run</summary><table><thead><tr><th>#</th><th>Tier</th><th>Seconds</th><th>Answer</th><th>Question type</th><th>Deciding quote found</th><th>Error</th></tr></thead><tbody>
+      ${rs.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.tier)}</td><td>${r.seconds}</td><td>${esc(r.status || "")}</td><td>${esc(r.askType || "")}</td><td>${r.error ? "" : r.deciding ? "yes" : '<span class="bad">no</span>'}</td><td class="bad">${esc(r.error || "")}</td></tr>`).join("")}
+      </tbody></table></details></section>`;
+  }
+
+  function render() {
+    $("#app").innerHTML = `<section class="card"><h2>Run the test</h2><div class="controls">
+        ${TEST.map(id => `<label><input type="checkbox" id="c-${id}" checked ${S.busy ? "disabled" : ""}> ${id}</label>`).join("")}
+        <label>Runs each <input type="number" id="n" value="${$("#n") ? $("#n").value : 20}" min="1" max="50" ${S.busy ? "disabled" : ""}></label>
+        <label>Model <select id="tier" ${S.busy ? "disabled" : ""}><option value="default">default</option><option value="quick">quick (cheaper)</option></select></label>
+        <button class="btn" id="go" ${S.busy || !S.sample ? "disabled" : ""}>Start</button>
+        <button class="btn quiet" id="stop" ${S.busy ? "" : "disabled"}>Stop after this run</button>
+        <button class="btn quiet" id="clear" ${S.busy || !runs.length ? "disabled" : ""}>Clear results</button>
+      </div>
+      <p class="hint">${S.sample === null ? "Open this page on claude.ai to run it." : S.sample === undefined ? "Getting ready..." : esc(S.note) || `Prompt ${esc(PROMPT_VERSION)}. Each run calls Claude several times, so 20 runs of both invoices takes a while.`}</p></section>
+      ${TEST.map(report).join("")}`;
+    $("#go").onclick = start;
+    $("#stop").onclick = () => { S.stop = true; S.note = "Stopping after this run."; render(); };
+    $("#clear").onclick = () => { runs = []; save(); render(); };
+  }
+  render();
+  (async () => {
+    try { S.sample = window.claude && window.claude.use ? await window.claude.use("sample") : null; } catch { S.sample = null; }
+    render();
+  })();
+})();
+</script>

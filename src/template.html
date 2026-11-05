@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Grant Coding Check</title>
+<title>Grant Check</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Roboto:wght@400;500;700&display=swap">
@@ -24,6 +24,9 @@ body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.55 
 
 .shell { background: var(--navy); color: var(--on-navy); border-bottom: 4px solid var(--gold) }
 .shell .in { max-width: 1240px; margin: 0 auto; padding-block: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px }
+.hbtn { font: 500 14px var(--body); color: var(--on-navy); background: transparent; border: 1px solid var(--on-navy-soft); border-radius: 6px; padding: 6px 12px; cursor: pointer }
+.hbtn:hover:not(:disabled) { background: rgba(255,255,255,.12) }
+.hbtn:disabled { opacity: .4; cursor: not-allowed }
 .brand { font: 600 20px/1.2 var(--head); text-transform: uppercase; letter-spacing: .14em; margin: 0 }
 .meta { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--on-navy-soft) }
 .fake { background: var(--gold); color: #2A2000; font: 700 12px/1 var(--body); letter-spacing: .04em; text-transform: uppercase; border-radius: 3px; padding: 5px 8px }
@@ -50,7 +53,6 @@ main { max-width: 1240px; margin: 0 auto; padding-block: 24px 48px; display: gri
 .chip.c-allowed { background: var(--ok-tint); color: var(--ok) } .chip.c-not_allowed { background: var(--no-tint); color: var(--no) }
 .chip.c-needs_info { background: var(--info-tint); color: var(--info) } .chip.c-escalate { background: var(--ask-tint); color: var(--ask) }
 .chip.c-run { background: var(--blue-tint); color: #00577D }
-.qhint { font-size: 13px; color: var(--soft); margin: 12px 0 0 }
 
 /* Drop zone: the check panel before an invoice is loaded */
 .drop { border: 2px dashed var(--rule); border-radius: 8px; background: var(--paper); min-height: 320px; display: grid; place-items: center; text-align: center; padding: 32px; color: var(--soft); transition: border-color .15s ease-out, background-color .15s ease-out }
@@ -72,6 +74,16 @@ h2 { font: 500 17px/1.2 var(--head); text-transform: uppercase; letter-spacing: 
 .coding th, .coding td { text-align: left; padding: 10px 8px; border-top: 1px solid var(--rule); vertical-align: top }
 .coding thead th { border-top: 0; font-size: 13px; font-weight: 500; color: var(--soft); padding-top: 0 }
 .coding tbody th { font-weight: 500; width: 34% }
+.coding select, .coding input[type=month] { font: 16px var(--body); padding: 7px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); max-width: 100% }
+.coding select:focus, .coding input:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden }
+.seg label { padding: 7px 14px; cursor: pointer; font-size: 15px }
+.seg label + label { border-left: 1px solid var(--rule) }
+.seg input { position: absolute; opacity: 0; pointer-events: none }
+.seg label:has(input:checked) { background: var(--blue); color: #fff }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: -2px }
+.seg label:has(input:disabled) { cursor: not-allowed; opacity: .6 }
+
 .blank { color: var(--info); font-weight: 700 }
 .was { color: var(--soft); text-decoration: line-through }
 .use { font-weight: 700 }
@@ -125,10 +137,28 @@ h2 { font: 500 17px/1.2 var(--head); text-transform: uppercase; letter-spacing: 
 .trace li.find-ok .t { color: var(--ok) }
 .trace-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap }
 .trace-head h2 { margin-bottom: 8px }
-.tlegend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--soft); margin: -4px 0 14px }
-.tlegend span { display: inline-flex; align-items: center; gap: 6px }
-.tlegend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block }
+/* Step dropdowns: the main line is the decision path; explanations open on request */
+.sd { margin: 4px 0 0; border: 0; padding: 0 }
+.sd > summary { font-size: 13px; font-weight: 500; color: var(--soft); list-style: none; display: inline-flex; align-items: center; gap: 4px; padding: 2px 0 }
+.sd > summary::-webkit-details-marker { display: none }
+.sd > summary::before { content: ""; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); margin-right: 4px; transition: transform .15s ease-out }
+.sd[open] > summary::before { transform: rotate(45deg) }
+.sd > summary:hover { color: var(--blue) }
+.sd-body { padding: 6px 0 4px }
+.bgl { margin: 0; padding: 0 0 0 18px; font-size: 14px }
+.bgl li { display: list-item; padding: 0 0 6px; grid-template-columns: none }
+.bgl li::after { display: none }
+.bgl .why { font-size: 13px }
+.trace .cat { display: none }
 .src.official, .src.fakedoc { background: var(--panel); color: var(--soft) }
+.ask { margin: 16px 0 4px; padding: 14px 16px; border: 1px solid var(--rule); border-left: 4px solid var(--ask); border-radius: 0 8px 8px 0; background: var(--ask-tint) }
+.ask.nonstd { border-left-color: var(--info); background: var(--info-tint) }
+.ask-h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 6px }
+.ask-type { font: 600 11px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--ask); background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; padding: 4px 9px }
+.ask.nonstd .ask-type { color: var(--info) }
+.ask-q { margin: 0 0 8px; font-size: 16px }
+.ask-cite { font-size: 14px; color: var(--soft) }
+.ask .tq { background: var(--paper) }
 /* Month strip for veteran_history */
 .hist { margin: 10px 0 2px; max-width: 600px }
 .hist-cap { font-weight: 700; font-size: 15px; margin-bottom: 6px }
@@ -172,6 +202,40 @@ h2 { font: 500 17px/1.2 var(--head); text-transform: uppercase; letter-spacing: 
 .v-allowed { background: var(--ok-tint); color: var(--ok) } .v-not_allowed { background: var(--no-tint); color: var(--no) }
 .v-needs_info { background: var(--info-tint); color: var(--info) } .v-escalate { background: var(--ask-tint); color: var(--ask) }
 h3 { font-size: 15px; margin: 0 0 8px }
+/* Decision: green means code it, red means ask finance */
+.dec { border-radius: 10px; padding: 20px 22px; color: #fff }
+.dec.go { background: var(--ok) } .dec.stop { background: var(--no) }
+.dec-h { display: flex; align-items: center; gap: 12px }
+.dec-h svg { width: 34px; height: 34px; flex: none }
+.dec-t { font: 600 28px/1.1 var(--head); text-transform: uppercase; letter-spacing: .06em; margin: 0 }
+.dec-s { font-size: 18px; font-weight: 500; margin: 4px 0 0 }
+.reasons { margin: 14px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px }
+.reasons li { display: grid; grid-template-columns: 18px 1fr; gap: 8px; font-size: 16px }
+.reasons li::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; margin-top: 9px; opacity: .8 }
+.changes { margin: 14px 0 0; padding: 10px 14px; border-radius: 6px; background: rgba(255,255,255,.14); font-size: 15px }
+.changes b { font-weight: 700 }
+.fq { margin: 14px 0 0; padding: 14px 16px; background: #fff; color: var(--ink); border-radius: 8px; font-size: 17px; line-height: 1.5 }
+.fq .ask-type { color: var(--no); margin-bottom: 8px; display: inline-block }
+.fq .ask-cite { margin-top: 8px }
+.acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px }
+.abtn { font: 500 15px var(--body); border-radius: 6px; padding: 10px 16px; cursor: pointer; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; gap: 8px }
+.abtn svg { width: 18px; height: 18px }
+.abtn.primary { background: var(--navy); border-color: var(--navy); color: #fff }
+.abtn:disabled { opacity: .5; cursor: not-allowed }
+.held { font-size: 14px; color: var(--soft); align-self: center }
+.panel { margin-top: 14px; border: 1px solid var(--rule); border-radius: 8px; padding: 16px; background: var(--panel) }
+.panel h3 { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; align-items: baseline }
+.tag { font-size: 12px; font-weight: 600; color: var(--gold-ink); background: var(--gold-tint); border: 1px solid var(--gold); border-radius: 999px; padding: 2px 9px }
+.panel table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--paper) }
+.panel th, .panel td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule); vertical-align: top }
+.panel thead th { background: var(--navy); color: #fff; font-weight: 500 }
+.from { font-size: 12px; font-weight: 500; border-radius: 999px; padding: 2px 8px; white-space: nowrap; background: var(--blue-tint); color: #00577D }
+.from.gc { background: var(--ok-tint); color: var(--ok) }
+.panel label { display: block; font-size: 14px; font-weight: 500; margin: 8px 0 4px }
+.panel input[type=email] { font: 15px var(--body); padding: 7px 10px; border: 1px solid var(--rule); border-radius: 6px; width: min(360px, 100%) }
+.mailpre { white-space: pre-wrap; font: 14px/1.5 var(--body); background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; max-height: 260px; overflow: auto; margin: 6px 0 0 }
+.msg { font-size: 14px; margin: 10px 0 0 } .msg.ok { color: var(--ok); font-weight: 500 } .msg.bad { color: var(--no); font-weight: 500 }
+.more { margin-top: 16px }
 .missed { margin: 0 0 6px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px }
 .missed li { display: grid; grid-template-columns: 20px 1fr; gap: 8px; font-size: 17px }
 .missed svg { width: 18px; height: 18px; margin-top: 4px; color: var(--gold-ink) }
@@ -189,8 +253,8 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
 
 <header class="shell">
   <div class="in gutter">
-    <h1 class="brand">Grant Coding Check</h1>
-    <div class="meta"><span class="fake">Fake data</span><span>Basecamp prototype</span></div>
+    <h1 class="brand">Grant Check</h1>
+    <div class="meta"><span class="fake">Fake data</span><span>Basecamp prototype</span><button type="button" class="hbtn" id="reset-all">Reset demo</button></div>
   </div>
 </header>
 <main class="gutter" id="app"></main>
@@ -244,8 +308,10 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
   const KEY = "gcc.demo.results";
   const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
   const keep = () => { try { localStorage.setItem(KEY, JSON.stringify(S.results)); } catch {} };
-  const S = { compact: true, sample: undefined, tools: false, run: null, results: load(), cur: null, error: null, drag: null };
-  const curInv = () => QUEUE.find(i => i.id === S.cur) || null;
+  const S = { edits: {}, openSteps: new Set(), panel: null, mail: { to: "", msg: "", busy: false }, sample: undefined, tools: false, run: null, results: load(), cur: null, error: null, drag: null };
+  // The presenter plays the site analyst: type of cost, program or admin, and service month start blank and are filled in on the page
+  const EDITABLE = ["category", "cost_type", "service_period"];
+  const curInv = () => { const i = QUEUE.find(x => x.id === S.cur); if (!i) return null; const e = S.edits[i.id] || {}; return { ...i, analyst: { ...i.analyst, ...Object.fromEntries(EDITABLE.map(k => [k, e[k] || ""])) } }; };
 
   (async () => {
     try { S.sample = window.claude && window.claude.use ? await window.claude.use("sample") : null; } catch { S.sample = null; }
@@ -271,40 +337,65 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
   }
   const srcClass = s => /eCFR/.test(s) ? "official" : /fake/.test(s) ? "fakedoc" : "";
   const qblock = (q, found) => { const loc = locateQuote(q, DOCS); return `<blockquote class="tq">"${esc(q.quote)}"<span class="${found ? "found" : "notfound"}">${found ? "Exact match in the source" : "Not found in the source. Read the rule yourself"}</span><span class="qlinks">${loc ? `<button type="button" class="qlink" data-doc="${esc(q.doc)}" data-quote="${esc(q.quote)}">See it in the document</button>` : ""}${loc && loc.url ? `<a class="qlink" href="${esc(loc.url)}" target="_blank" rel="noopener">Open ${esc(q.section || "the section")} on eCFR</a>` : ""}</span></blockquote>`; };
-  // Short view for presenting: setup steps fold into one Background row; only story steps keep their text
-  const STORY_DOCS = ["38CFR62", "24CFR578", "CHF", "RIDGE"];
-  const isBackground = e => ["paperwork", "count", "person"].includes(e.kind) || e.kind === "write" || (e.kind === "doc" && !STORY_DOCS.some(d => (e.source || "") === (DOC_SOURCE[d] || "#")));
-  const BG_WORD = { paperwork: e => /problem/.test(e.title) ? e.title : "Paperwork complete", count: () => "Limits counted", person: () => "Veteran record pulled", doc: e => e.title.replace(/^Reading/, "Read"), write: () => "" };
+  // Main trace: only the decision path. Setup steps fold into one Background row; explanations sit in each step's dropdown
+  const isBackground = e => ["paperwork", "count", "person", "doc", "write"].includes(e.kind);
   function compactTrace(t) {
     const out = []; let bg = null;
     const pivotQuotes = t.filter(e => e.kind === "pivot" && e.data && e.data.quote).map(e => norm(e.data.quote));
     for (const e of t) {
       if (isBackground(e)) {
-        if (e.id === "write") { out.push({ ...e, why: "", detail: "" }); continue; }
+        if (e.id === "write" && e.state === "running") { out.push({ ...e, why: "", detail: "" }); continue; }   // live progress only
         if (!bg) { bg = { id: "bg", kind: "paperwork", title: "Background checks", items: [], state: "done", fresh: false }; out.push(bg); }
         bg.items.push(e);
-        if (e.fresh) bg.fresh = true;
-        if (e.state === "running") bg.state = "running";
+        if (e.fresh && bg.items.length === 1) bg.fresh = true;   // animate the row once, when it first appears; later items fold in quietly
         continue;
       }
       if (e.kind === "final" && e.quote && pivotQuotes.includes(norm(e.quote))) continue;   // already shown on the pivot
-      out.push({ ...e, why: e.kind === "history" ? e.why : "", detail: e.kind === "doc" ? "" : e.detail, short: true });
+      if (e.kind === "final" && e.id !== "quote0") { if (bg) bg.items.push(e); continue; }
+      out.push(e);
     }
-    if (bg) { bg.detail = bg.items.filter(e => e.state !== "running").map(e => (BG_WORD[e.kind] || (x => x.title))(e)).filter(Boolean).join(" · "); bg.bad = bg.items.some(e => / problem/.test(e.title)); }
+    if (bg) { bg.bad = bg.items.some(e => / problem/.test(e.title)); if (bg.bad) bg.title = "Background checks: paperwork problem"; }
     return out;
   }
-  const traceHTML = t => (S.compact ? compactTrace(t) : t).map(step).join("");
+  const traceHTML = t => compactTrace(t).map(step).join("");
+  // Question for finance: fixed type, templated words, and the rule we think governs, quoted with links
+  function askHTML(r, INV) {
+    const a = r.status === "allowed" ? null : renderAsk(r.ask, INV, DOCS);
+    if (!a) return r.question ? `<div class="ask"><div class="ask-h"><b>Question for finance</b></div><p>${esc(r.question)}</p></div>` : "";
+    return `<div class="ask${a.standard ? "" : " nonstd"}"><div class="ask-h"><b>Question for finance</b><span class="ask-type">${esc(a.label)}</span></div>
+      <p class="ask-q">${esc(a.text)}</p>
+      ${a.quote ? `<div class="ask-cite">Rule we think governs: <b>${esc(a.cite || "not found in the documents")}</b></div>${qblock({ doc: a.doc, section: a.cite, quote: a.quote }, a.found)}` : ""}
+      ${(a.type === "rules_conflict" || a.type === "needs_approval") && a.quote_b ? qblock({ doc: a.doc_b, section: "", quote: a.quote_b }, verifyQuote({ doc: a.doc_b, quote: a.quote_b }, DOCS)) : ""}</div>`;
+  }
   const CAT = { paperwork: "check", count: "check", person: "vet", history: "vet", doc: "rule", final: "rule", write: "claude", pivot: "pivot" };
   const CAT_LABEL = { check: "Page check", vet: "Veteran record", rule: "Rules", claude: "Claude", pivot: "Change of path" };
   const finding = e => e.state !== "done" ? "" : /^(Paperwork problem|SSVF .* limit reached|Over a limit)/.test(e.title) ? " find-bad" : /^(Paperwork complete|Within the SSVF|All limits OK)/.test(e.title) ? " find-ok" : "";
-  const step = e => { const c = CAT[e.kind] || "claude"; return `<li class="cat-${c} st-${e.state || "done"}${e.kind === "final" && e.state !== "error" ? " st-final" : ""}${e.kind === "pivot" && e.data && e.data.next_fund === "none" ? " dead" : ""}${finding(e)}${e.fresh ? " enter" : ""}"><span class="ic">${e.state === "error" ? ICON.bad : ICON[e.kind] || ICON.final}</span><div class="sb"><span class="cat">${CAT_LABEL[c]}</span><div class="t">${esc(e.title)}${e.source ? e.source.split(" · ").map(x => `<span class="src ${srcClass(x)}">${esc(x)}</span>`).join("") : ""}</div>${e.why ? `<div class="why"><b>Why:</b> ${esc(e.why)}</div>` : ""}${e.kind === "history" && e.data && e.data.found ? histStrip(e.data, e.grow) : e.detail ? `<div class="d">${e.kind === "pivot" ? "<b>Because:</b> " : ""}${esc(e.detail)}</div>` : ""}${e.quote ? qblock({ doc: e.doc, section: e.detail, quote: e.quote }, e.found) : ""}${e.kind === "pivot" && e.data && e.data.skipped ? `<div class="d"><b>Skipped:</b> ${esc(e.data.skipped)}</div>` : ""}${e.kind === "pivot" && e.data && e.data.quote ? qblock(e.data, e.data.quote_found_in_source) : ""}</div></li>`; };
+  const srcChips = e => e.source ? e.source.split(" · ").map(x => `<span class="src ${srcClass(x)}">${esc(x)}</span>`).join("") : "";
+  // Everything that explains a step sits in its dropdown; the main line is only the step's result
+  function stepBody(e) {
+    let b = "";
+    if (e.source) b += `<div class="d">Source: ${srcChips(e)}</div>`;
+    if (e.why) b += `<div class="why"><b>Why Claude checked this:</b> ${esc(e.why)}</div>`;
+    if (e.kind === "history" && e.data && e.data.found) b += histStrip(e.data, false);
+    else if (e.detail) b += `<div class="d">${e.kind === "pivot" ? "<b>Because:</b> " : ""}${esc(e.detail)}</div>`;
+    if (e.quote) b += qblock({ doc: e.doc, section: e.detail, quote: e.quote }, e.found);
+    if (e.kind === "pivot" && e.data && e.data.skipped) b += `<div class="d"><b>Skipped:</b> ${esc(e.data.skipped)}</div>`;
+    if (e.kind === "pivot" && e.data && e.data.quote) b += qblock(e.data, e.data.quote_found_in_source);
+    if (e.items) b += `<ul class="bgl">${e.items.map(x => `<li>${esc(x.title)}${x.why ? `<div class="why"><b>Why:</b> ${esc(x.why)}</div>` : ""}</li>`).join("")}</ul>`;
+    return b;
+  }
+  const SD_LABEL = { pivot: "The rule behind this", history: "See the months", final: "See the rule", paperwork: "See what was checked" };
+  const step = e => {
+    const c = CAT[e.kind] || "claude", body = e.state === "running" ? "" : stepBody(e);
+    return `<li class="cat-${c} st-${e.state || "done"}${e.kind === "final" && e.state !== "error" ? " st-final" : ""}${e.kind === "pivot" && e.data && e.data.next_fund === "none" ? " dead" : ""}${finding(e)}${e.fresh ? " enter" : ""}"><span class="ic">${e.state === "error" ? ICON.bad : ICON[e.kind] || ICON.final}</span><div class="sb"><div class="t">${esc(e.title)}</div>${body ? `<details class="sd" data-sid="${esc(e.id)}"${S.openSteps.has(e.id) ? " open" : ""}><summary>${SD_LABEL[e.kind] || "Details"}</summary><div class="sd-body">${body}</div></details>` : ""}</div></li>`;
+  };
 
   // One step at a time: a step appears, waits for its own result, shows the result (text, chart or quote),
   // and stays alone on screen for a reading pause before the next step appears.
   const PACE = 1600, RESULT_DELAY = 700;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   let queue = [], pumping = null;
-  const dwell = e => PACE + (e.data || e.quote ? 1400 : 0) + Math.min(String(e.detail || "").length * 12, 1200) + (e.why ? 600 : 0);
+  const dwell = e => PACE + (e.kind === "pivot" || e.kind === "history" ? 900 : 0);   // details are folded away, so only the one-line result needs reading time
   function show(ev) {
     if (!S.run) return false;
     const t = S.run.trace, i = t.findIndex(e => e.id === ev.id);
@@ -330,7 +421,7 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
         const ev = queue.shift();
         if (!show(ev)) continue;                       // update to a step already on screen: no pause
         let shown = S.run && S.run.trace.find(e => e.id === ev.id);
-        const quick = S.compact && isBackground(ev);
+        const quick = isBackground(ev);
         if (ev.state === "running") {
           await sleep(quick ? 150 : RESULT_DELAY);
           const res = await resultFor(ev.id);
@@ -368,11 +459,11 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
       const quotes = [r.deciding, ...(r.supporting || []).slice(0, 2)].filter(q => q && q.quote);
       quotes.forEach((q, n) => {
         const found = verifyQuote(q, DOCS);
-        log({ id: "quote" + n, kind: "final", title: n === 0 ? "The rule that decides it" : "A supporting rule", source: DOC_SOURCE[q.doc] || "", doc: q.doc, detail: q.section || "", quote: q.quote, found, state: found ? "done" : "error" });
+        log({ id: "quote" + n, kind: "final", title: n === 0 ? `The rule that decides it: ${citeLabel(q.doc, q.quote, DOCS) || q.section || ""}` : "A supporting rule", source: DOC_SOURCE[q.doc] || "", doc: q.doc, detail: q.section || "", quote: q.quote, found, state: found ? "done" : "error" });
       });
       const ok = quotes.length ? verifyQuote(r.deciding, DOCS) : false;
       r.verified = ok; S.run.ended = true; await drain(); r.trace = S.run.trace.map(({ fresh, ...e }) => e); r.seconds = Math.round((Date.now() - S.run.t0) / 1000);
-      S.results[INV.id] = r; keep();
+      r.analyst = { ...INV.analyst }; S.results[INV.id] = r; keep();
     } catch (e) {
       if (e && e.code === "tools_unavailable") { S.tools = false; S.error = "Step-by-step mode isn't available here. Run it again for the quick check."; }
       else if (e && e.code !== "cancelled") S.error = ERR[e && e.code] || "The check didn't finish. Run it again.";
@@ -382,8 +473,8 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
 
   function open(id) {
     if (S.run) return;
-    S.cur = id; S.error = null; render();
-    if (!S.results[id] && S.sample) check();
+    S.cur = id; S.error = null; S.panel = null; S.mail.msg = ""; render();
+    const f = document.querySelector("#f-category"); if (f && !S.results[id]) f.focus();
   }
 
   function statusText(r) {
@@ -396,19 +487,18 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
     return `<section class="card"><div class="queue-head"><h2>Invoices to code</h2><span class="qcount">${waiting} waiting</span></div>
       <ul class="qlist">${QUEUE.map(i => {
         const r = S.results[i.id], running = S.run && S.run.id === i.id;
-        const chip = running ? '<span class="chip c-run">Checking...</span>' : r ? `<span class="chip c-${esc(r.status)}">Checked: ${esc(statusText(r))}</span>` : '<span class="chip">Needs coding</span>';
+        const chip = running ? '<span class="chip c-run">Checking...</span>' : r ? `<span class="chip ${r.status === "allowed" ? "c-allowed" : "c-not_allowed"}">${r.status === "allowed" ? "Ready to code" : "Needs finance"}</span>` : '<span class="chip">Needs coding</span>';
         return `<li class="qrow ${S.cur === i.id ? "current" : ""} ${S.run ? "locked" : ""}" draggable="${S.run ? "false" : "true"}" data-id="${i.id}" tabindex="0" role="button" aria-label="Check ${esc(i.vendor)}, ${money(i.amount)}">
           <div class="qtop"><span>${esc(i.vendor)}</span><span class="num">${money(i.amount)}</span></div>
           <div class="qdesc">${esc(i.description)}</div>
           <div class="qmeta"><span>${esc(i.site)} site</span><span>${esc(i.id)}</span>${chip}</div></li>`;
       }).join("")}</ul>
-      <p class="qhint">Drag an invoice into the check, or click it.</p>
     </section>`;
   }
 
   function render() {
     const INV = curInv();
-    const html = INV ? renderTool(INV) : `<div class="drop" id="drop">${'<div>' + svg('<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/>') + '<b>Drop an invoice here</b>Grant Coding Check reads the invoice, the veteran\'s history and the grant rules, then suggests the coding.</div>'}</div>`;
+    const html = INV ? renderTool(INV) : `<div class="drop" id="drop">${'<div>' + svg('<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/>') + '<b>Drop an invoice here</b></div>'}</div>`;
     $("#app").innerHTML = `<div class="col">${renderQueue()}</div><div class="col tool" id="tool">${html}</div>`;
     bind();
   }
@@ -426,17 +516,148 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
     tool.addEventListener("dragleave", e => { if (!tool.contains(e.relatedTarget)) tool.classList.remove("over"); });
     tool.addEventListener("drop", e => { e.preventDefault(); tool.classList.remove("over"); let id = S.drag; try { id = e.dataTransfer.getData("text/plain") || id; } catch {} if (id && QUEUE.some(i => i.id === id)) open(id); });
     const b = $("#go"); if (b) b.addEventListener("click", check);
-    const tm = $("#tmode"); if (tm) tm.addEventListener("click", () => { S.compact = !S.compact; render(); });
-    const x = $("#reset"); if (x) x.addEventListener("click", () => { S.results = {}; S.cur = null; S.error = null; try { localStorage.removeItem(KEY); } catch {} render(); window.scrollTo(0, 0); });
+    document.querySelectorAll("#tool [data-k]").forEach(el => el.addEventListener("change", () => { const id = S.cur; if (!id || S.run) return; S.edits[id] = { ...(S.edits[id] || {}), [el.dataset.k]: el.value }; render(); }));
+    const ra = $("#reset-all"); if (ra) ra.disabled = !!S.run || (!Object.keys(S.results).length && !S.cur && !S.error);
+  }
+
+  // ---- Decision card: green = code it, red = ask finance ----
+  const ICON_MAIL = svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>');
+  const ICON_SEND = svg('<path d="M4 12 20 4l-4 16-4-7z"/><path d="m12 13 8-9"/>');
+  const ICON_LEDGER = svg('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>');
+  const CHANGE_FIELDS = ["fund", "category", "cost_type", "service_period"];
+  function codingChanges(r) {
+    const a = r.analyst || {}, s = r.suggested || {};
+    return CHANGE_FIELDS.map(k => {
+      const was = a[k] || "", now = s[k] || "";
+      if (!now || String(was) === String(now)) return null;
+      return was ? `Changed <b>${FIELDS[k]}</b> from ${esc(label(k, was))} to ${esc(label(k, now))}` : `Filled in <b>${FIELDS[k]}</b>: ${esc(label(k, now))}`;
+    }).filter(Boolean);
+  }
+  const reasonsOf = r => [r.summary, ...(Array.isArray(r.missed) ? r.missed : [])].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).slice(0, 3);
+  const cleanQ = q => String(q || "").replace(/^["“]|["”]$/g, "");
+
+  // Email to finance: same words as the card, with the rule we think applies and where to read it
+  function mailParts(r, INV) {
+    const a = renderAsk(r.ask, INV, DOCS);
+    const q = a ? a.text : (r.question || r.summary || "");
+    const lines = [`Hi,`, ``, q, ``, `Invoice: ${INV.id}, ${INV.vendor}, ${money(INV.amount)}`, `Site: ${INV.site}. ${INV.description}`, `Invoice date: ${INV.date}`];
+    if (a && a.quote) {
+      const loc = locateQuote({ doc: a.doc, quote: a.quote }, DOCS);
+      lines.push(``, `Rule we think governs: ${a.cite || "see quote"}`, `"${cleanQ(a.quote)}"`);
+      if (loc && loc.url) lines.push(loc.url);
+    }
+    if (a && a.quote_b) lines.push(``, `Also relevant: ${citeLabel(a.doc_b, a.quote_b, DOCS) || a.doc_b}`, `"${cleanQ(a.quote_b)}"`);
+    lines.push(``, `Grant Check is holding this invoice until you answer.`, ``, `Sent from Grant Check (Basecamp prototype, fake data).`);
+    return { subject: `Grant Check question: ${INV.id} ${INV.vendor} ${money(INV.amount)}`, body: lines.join("\n") };
+  }
+  const gmailURL = (to, m) => `https://mail.google.com/mail/?view=cm&fs=1${to ? "&to=" + encodeURIComponent(to) : ""}&su=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.body)}`;
+  const SENDTO = "gc.sendto";
+  try { S.mail.to = localStorage.getItem(SENDTO) || ""; } catch {}
+  const MAIL_ERR = {
+    server_not_connected: "Gmail isn't connected to your Claude account. Use Email finance instead, or add Gmail in claude.ai connector settings.",
+    server_not_found: "Gmail isn't connected to your Claude account. Use Email finance instead.",
+    needs_reauth: "Gmail needs you to sign in again in claude.ai connector settings.",
+    approval_required: "Sending needs your OK. Allow Gmail for this page when claude.ai asks, then press Send again.",
+    consent_required: "Sending needs your OK. Allow Gmail for this page when claude.ai asks, then press Send again.",
+    not_granted: "This page isn't allowed to use Gmail. Use Email finance instead.",
+    blocked_by_policy: "Your organization blocks sending from this page. Use Email finance instead.",
+    server_unavailable: "Not sure it sent. Check your Sent folder before trying again.",
+    upstream_error: "Not sure it sent. Check your Sent folder before trying again."
+  };
+  async function sendMail() {
+    const INV = curInv(), r = INV && S.results[INV.id]; if (!r || S.mail.busy) return;
+    const to = ($("#mail-to") || {}).value ? $("#mail-to").value.trim() : "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) { S.mail.msg = "bad:Enter an email address to send to."; render(); return; }
+    S.mail.to = to; try { localStorage.setItem(SENDTO, to); } catch {}
+    S.mail.busy = true; S.mail.msg = ""; render();
+    try {
+      const mcp = window.claude && window.claude.use ? await window.claude.use("mcp") : null;
+      if (!mcp) throw { code: "unavailable_here" };
+      const m = mailParts(r, INV);
+      await mcp.callTool("Gmail", "send_message", { to: [to], subject: m.subject, body: m.body });
+      S.mail.msg = "ok:Sent to " + to + ". Check the inbox.";
+    } catch (e) {
+      const c = e && e.code;
+      S.mail.msg = "bad:" + (c === "unavailable_here" ? "Sending isn't available in this view. Use Email finance instead." : c === "tool_error" ? "Gmail didn't send it: " + (e.message || "unknown reason") : MAIL_ERR[c] || "Couldn't send. Use Email finance instead.");
+    } finally { S.mail.busy = false; render(); }
+  }
+
+  // Sage handoff preview: what the AP bill would look like. Not connected. Account numbers are made up.
+  const GL = { "TFA-Rent": "6510 Rental assistance", "TFA-Rent-Fees": "6511 Rental fees", "TFA-Utility": "6520 Utility assistance", "TFA-Security-Deposit": "6530 Security deposits", "TFA-Utility-Deposit": "6531 Utility deposits", "TFA-Moving": "6540 Moving costs", "TFA-GHSA": "6550 Housing stability items", "SS-Case-Management": "6610 Case management", "SS-Transportation": "6620 Client transportation", "SS-Legal": "6630 Legal services", "Client-Flex": "6590 Client flexible assistance", "Staff-Training": "7210 Staff training", "Admin": "7900 General and administrative" };
+  const DEPT = { Program: "Program services", Admin: "Management and general" };
+  function sageRows(r, INV) {
+    const s = r.suggested || {}, d = r.deciding || {};
+    const cite = d.quote ? citeLabel(d.doc, d.quote, DOCS) || d.section : "";
+    return [
+      ["Vendor", INV.vendor, "inv"], ["Bill number", INV.id, "inv"], ["Bill date", INV.date, "inv"], ["Amount", money(INV.amount), "inv"],
+      ["GL account", GL[s.category] || s.category || "", "gc"], ["Location", INV.site, "inv"], ["Department", DEPT[s.cost_type] || s.cost_type || "", "gc"],
+      ["Fund / grant", s.fund ? `${s.fund} (${FUND_NAME[s.fund] || s.fund})` : "", "gc"], ["Service period", monthName(s.service_period), "gc"],
+      ["Memo", `Grant Check: ${cite || "coding confirmed"}`, "gc"]
+    ];
+  }
+  async function sageCSV() {
+    const INV = curInv(), r = INV && S.results[INV.id]; if (!r) return;
+    const rows = sageRows(r, INV), q = v => `"${String(v).replace(/"/g, '""')}"`;
+    const csv = rows.map(x => q(x[0])).join(",") + "\n" + rows.map(x => q(x[0] === "Amount" ? INV.amount : x[1])).join(",") + "\n";
+    const filename = `sage-bill-${INV.id.toLowerCase()}.csv`;
+    try {
+      const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+      if (dl) { await dl.save({ filename, data: new Blob([csv], { type: "text/csv" }) }); return; }
+    } catch (e) { if (e && e.code === "declined") return; }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  function decisionHTML(r, INV) {
+    const go = r.status === "allowed", sug = r.suggested || {};
+    const changes = codingChanges(r);
+    let h = `<section class="card" aria-live="polite">`;
+    if (go) {
+      h += `<div class="dec go"><div class="dec-h">${ICON.allowed}<div><p class="dec-t">Ready to code</p><p class="dec-s">${esc(statusText(r))}</p></div></div>
+        <ul class="reasons">${reasonsOf(r).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+        ${changes.length ? `<div class="changes">${changes.join("<br>")}</div>` : ""}</div>
+        <div class="acts"><button type="button" class="abtn primary" data-act="sage">${ICON_LEDGER}Send to Sage</button></div>`;
+      if (S.panel === "sage") h += `<div class="panel"><h3><span>Sage bill preview</span><span class="tag">Preview. Not connected to Sage.</span></h3>
+        <table><thead><tr><th>Sage field</th><th>Value</th><th>From</th></tr></thead><tbody>${sageRows(r, INV).map(([k, v, f]) => `<tr><th scope="row">${k}</th><td>${esc(v)}</td><td><span class="from ${f}">${f === "gc" ? "Grant Check" : "Invoice"}</span></td></tr>`).join("")}</tbody></table>
+        <div class="acts"><button type="button" class="abtn" data-act="csv">Download import file (CSV)</button></div></div>`;
+    } else {
+      const a = renderAsk(r.ask, INV, DOCS), m = mailParts(r, INV);
+      h += `<div class="dec stop"><div class="dec-h">${ICON.escalate}<div><p class="dec-t">Needs finance</p><p class="dec-s">${esc(r.summary || "")}</p></div></div>
+        <div class="fq">${a ? `<span class="ask-type">${esc(a.label)}</span>` : ""}<div>${esc(a ? a.text : r.question || "")}</div>
+        ${a && a.quote ? `<div class="ask-cite">Rule we think governs: <b>${esc(a.cite || "not found in the documents")}</b></div>
+        <details class="sd"><summary>See the rules behind this question</summary><div class="sd-body">${qblock({ doc: a.doc, section: a.cite, quote: a.quote }, a.found)}${a.quote_b ? qblock({ doc: a.doc_b, section: "", quote: a.quote_b }, verifyQuote({ doc: a.doc_b, quote: a.quote_b }, DOCS)) : ""}</div></details>` : ""}</div></div>
+        <div class="acts"><a class="abtn primary" href="${esc(gmailURL(S.mail.to, m))}" target="_blank" rel="noopener">${ICON_MAIL}Email finance</a>
+          <button type="button" class="abtn" data-act="mail">${ICON_SEND}Send with Gmail</button>
+          <button type="button" class="abtn" disabled>${ICON_LEDGER}Send to Sage</button><span class="held">Held until finance answers.</span></div>`;
+      if (S.panel === "mail") {
+        const [mk, mt] = S.mail.msg ? [S.mail.msg.slice(0, S.mail.msg.indexOf(":")), S.mail.msg.slice(S.mail.msg.indexOf(":") + 1)] : ["", ""];
+        h += `<div class="panel"><h3><span>Send this question with Gmail</span><span class="tag">Sends a real email</span></h3>
+          <label for="mail-to">Send to</label><input type="email" id="mail-to" value="${esc(S.mail.to)}" placeholder="you@example.org" ${S.mail.busy ? "disabled" : ""}>
+          <label>Subject</label><div class="mailpre">${esc(m.subject)}</div>
+          <label>Message</label><div class="mailpre">${esc(m.body)}</div>
+          <div class="acts"><button type="button" class="abtn primary" data-act="send" ${S.mail.busy ? "disabled" : ""}>${S.mail.busy ? "Sending..." : "Send now"}</button><button type="button" class="abtn" data-act="close">Cancel</button></div>
+          ${mt ? `<p class="msg ${mk}">${esc(mt)}</p>` : ""}</div>`;
+      }
+    }
+    const d = r.deciding || {};
+    if (d.quote) h += `<details class="sd more"><summary>Why Claude decided this</summary><div class="sd-body">${qblock({ doc: d.doc, section: d.section, quote: d.quote }, r.verified)}${r.precedence ? `<p class="why"><b>Why this rule wins:</b> ${esc(r.precedence)}</p>` : ""}</div></details>`;
+    return h + `</section>`;
   }
 
   function renderTool(INV) {
     const r = S.results[INV.id], sug = r && r.suggested ? r.suggested : null;
+    const lock = !!S.run;
+    const input = k => {
+      const v = INV.analyst[k] || "";
+      if (k === "category") return `<select id="f-category" data-k="category" ${lock ? "disabled" : ""}><option value="">Choose a type of cost</option>${CATEGORIES.map(c => `<option value="${c}" ${c === v ? "selected" : ""}>${esc(CAT_NAME[c] || c)}</option>`).join("")}</select>`;
+      if (k === "cost_type") return `<span class="seg" role="radiogroup" aria-label="Program or admin">${["Program", "Admin"].map(o => `<label><input type="radio" name="f-ct" data-k="cost_type" value="${o}" ${o === v ? "checked" : ""} ${lock ? "disabled" : ""}>${o}</label>`).join("")}</span>`;
+      return `<input type="month" id="f-sp" data-k="service_period" value="${esc(v)}" ${lock ? "disabled" : ""}>`;
+    };
     const rows = Object.keys(FIELDS).map(k => {
       const entered = INV.analyst[k], sv = sug ? (sug[k] ?? null) : undefined, changed = sug && String(sv ?? "") !== String(entered ?? "");
-      const ent = entered ? `<span class="${changed ? "was" : ""}">${esc(label(k, entered))}</span>` : '<span class="blank">Left blank</span>';
+      const ent = EDITABLE.includes(k) ? input(k) : entered ? `<span class="${changed ? "was" : ""}">${esc(label(k, entered))}</span>` : '<span class="blank">Left blank</span>';
       return `<tr><th scope="row">${FIELDS[k]}</th><td>${ent}</td>${sug ? `<td><span class="use ${changed ? "changed" : ""}">${esc(sv ? label(k, sv) : k === "fund" ? "No grant can pay" : "None")}</span></td>` : ""}</tr>`;
     }).join("");
+    const stale = r && r.analyst && EDITABLE.some(k => String(r.analyst[k] || "") !== String(INV.analyst[k] || ""));
     const date = new Date(INV.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
     let html = `<section class="card">
@@ -444,31 +665,20 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
       <p class="desc">${esc(INV.description)}</p>
       <dl class="facts"><div><dt>Site</dt><dd>${esc(INV.site)}</dd></div><div><dt>Pay to</dt><dd>${esc(INV.payee)}</dd></div><div><dt>Veteran</dt><dd>${INV.client ? esc(INV.client) : "None"}</dd></div><div><dt>Invoice date</dt><dd class="num">${date}</dd></div></dl>
       <h2>${sug ? "Coding" : "Analyst's coding"}</h2>
-      <table class="coding"><thead><tr><th>Field</th><th>Analyst entered</th>${sug ? "<th>Check suggests</th>" : ""}</tr></thead><tbody>${rows}</tbody></table>
+      <table class="coding"><thead><tr><th>Field</th><th>Analyst enters</th>${sug ? "<th>Check suggests</th>" : ""}</tr></thead><tbody>${rows}</tbody></table>
       <div class="go">
         <button class="btn${r && !S.run ? " quiet" : ""}" id="go" type="button" ${S.sample && !S.run ? "" : "disabled"}>${S.run ? "Checking..." : r ? "Run again" : "Run grant check"}</button>
-        ${!S.run && (Object.keys(S.results).length || S.error) ? '<button class="btn quiet" id="reset" type="button">Reset demo</button>' : ""}
-        ${S.sample === null ? '<span class="hint">Open this page on claude.ai to run the check.</span>' : S.sample === undefined ? '<span class="hint">Getting ready...</span>' : ""}
+        ${S.sample === null ? '<span class="hint">Open this page on claude.ai to run the check.</span>' : S.sample === undefined ? '<span class="hint">Getting ready...</span>' : stale ? '<span class="hint">Coding changed since the last check. Run it again.</span>' : ""}
       </div>
     </section>`;
 
     const live = S.run && S.run.id === INV.id;
     const trace = live ? S.run.trace : r && r.trace;
-    if (live || (trace && trace.length)) html += `<section class="card"><div class="trace-head"><h2>What the check looked at</h2><button type="button" class="btn quiet" id="tmode">${S.compact ? "Show every step" : "Show the short version"}</button></div><div class="tlegend">${["rule","vet","check","claude","pivot"].map(c => `<span><i style="background:var(--c-${c})"></i>${CAT_LABEL[c]}</span>`).join("")}</div><ol class="trace" id="trace" aria-live="polite">${traceHTML(trace)}</ol>${live ? '<p class="elapsed" id="elapsed">0 seconds</p>' : r && r.seconds ? `<p class="elapsed">Took ${r.seconds} seconds</p>` : ""}</section>`;
+    if (live || (trace && trace.length)) html += `<section class="card"><h2>Claude Trace</h2><ol class="trace" id="trace" aria-live="polite">${traceHTML(trace)}</ol>${live ? '<p class="elapsed" id="elapsed">0 seconds</p>' : r && r.seconds ? `<p class="elapsed">Took ${r.seconds} seconds</p>` : ""}</section>`;
 
     if (S.error) html += `<section class="card"><p class="err">${esc(S.error)}${r ? " The last answer is still below." : ""}</p></section>`;
 
-    if (r && !live) {
-      const what = statusText(r);
-      const missed = Array.isArray(r.missed) ? r.missed.slice(0, 3) : [];
-      const d = r.deciding || {};
-      html += `<section class="card" aria-live="polite">
-        <div class="verdict v-${esc(r.status)}">${ICON[r.status] || ""}<div><p class="what">${esc(what)}</p><p>${esc(r.summary)}</p></div></div>
-        ${missed.length ? `<h3>What the check caught</h3><ul class="missed">${missed.map(m => `<li>${ICON.flag}<span>${esc(m)}</span></li>`).join("")}</ul>` : ""}
-        ${r.question ? `<p><b>Question for finance:</b> ${esc(r.question)}</p>` : ""}
-        ${d.quote ? `<details><summary>The rule behind this</summary><blockquote><div class="qsrc"><b>${esc(d.section || d.doc)}</b><span class="${r.verified ? "found" : "notfound"}">${r.verified ? "Matches the source text" : "Not found in the source"}</span></div>${esc(d.quote)}</blockquote>${r.precedence ? `<p class="why"><b>Why this rule wins:</b> ${esc(r.precedence)}</p>` : ""}</details>` : ""}
-      </section>`;
-    }
+    if (r && !live) html += decisionHTML(r, INV);
 
     return html;
   }
@@ -484,7 +694,19 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
     dlg.showModal();
     const hit = dlg.querySelector(".hit"); if (hit) hit.scrollIntoView({ block: "center" });
   }
-  document.addEventListener("click", ev => { const b = ev.target.closest && ev.target.closest("button.qlink"); if (b) showDoc(b.dataset.doc, b.dataset.quote); });
+  document.addEventListener("click", ev => {
+    const b = ev.target.closest && ev.target.closest("button.qlink"); if (b) { showDoc(b.dataset.doc, b.dataset.quote); return; }
+    const act = ev.target.closest && ev.target.closest("[data-act]"); if (!act || act.disabled) return;
+    const k = act.dataset.act;
+    if (k === "sage" || k === "mail") { S.panel = S.panel === k ? null : k; S.mail.msg = ""; render(); }
+    else if (k === "close") { S.panel = null; render(); }
+    else if (k === "send") sendMail();
+    else if (k === "csv") sageCSV();
+  });
+  // Keep a step's dropdown open across re-renders while the trace is still filling in
+  document.addEventListener("toggle", ev => { const d = ev.target; if (!d.dataset || !d.dataset.sid) return; if (d.open) S.openSteps.add(d.dataset.sid); else S.openSteps.delete(d.dataset.sid); }, true);
+  // Header button: back to the starting queue (both invoices waiting, nothing open)
+  $("#reset-all").addEventListener("click", () => { if (S.run) return; S.results = {}; S.edits = {}; S.cur = null; S.error = null; S.panel = null; S.mail.msg = ""; S.openSteps.clear(); try { localStorage.removeItem(KEY); } catch {} render(); window.scrollTo(0, 0); });
   render();
 })();
 </script>

@@ -11,7 +11,8 @@ Basecamp prototype for the U.S.VETS accounts payable discovery. A site budget an
 | `src/template.html` | Page markup, styles and UI code |
 | `src/logic.js` | Fake data, rule checks, prompts, page tools, practice generator, eval checks |
 | `data/regs.json` | Official regulation text pulled from the eCFR API |
-| `dist/grant-coding-check.html` | Built single-file page (what gets published) |
+| `dist/grant-check.html` | Built single-file page (what gets published) |
+| `dist/grant-check-consistency.html` | Repeat-run test: same invoice N times, counts distinct answers and finance questions |
 | `tools/build.py` | Builds `dist/` from `src/` and `data/` |
 | `tools/regs2json.py` | Converts eCFR XML downloads into `data/regs.json` |
 | `docs/evals.md` | Eval plan and the answer key that needs human sign-off |
