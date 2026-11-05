@@ -123,6 +123,8 @@ h2 { font: 500 17px/1.2 var(--head); text-transform: uppercase; letter-spacing: 
 .trace li.cat-pivot.dead { --c: var(--no); --ct: var(--no-tint) }
 .trace li.find-bad .t { color: var(--no); font-weight: 700 }
 .trace li.find-ok .t { color: var(--ok) }
+.trace-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap }
+.trace-head h2 { margin-bottom: 8px }
 .tlegend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--soft); margin: -4px 0 14px }
 .tlegend span { display: inline-flex; align-items: center; gap: 6px }
 .tlegend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block }
@@ -148,6 +150,17 @@ h2 { font: 500 17px/1.2 var(--head); text-transform: uppercase; letter-spacing: 
 @media (prefers-reduced-motion: reduce) { .hist.grow .cell { animation: none } }
 .tq { margin: 8px 0 2px; padding: 10px 14px; background: var(--panel); border-left: 3px solid var(--gold); border-radius: 0 6px 6px 0; font-size: 16px; line-height: 1.5 }
 .tq span { display: block; margin-top: 6px; font-size: 13px }
+.qlinks { display: flex !important; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px !important }
+.qlink { font: 500 13px var(--body); color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px }
+#docview { border: 0; border-radius: 10px; padding: 0; width: min(760px, calc(100vw - 32px)); max-height: 85vh; box-shadow: 0 20px 60px rgba(0,0,0,.25) }
+#docview::backdrop { background: rgba(20,30,45,.45) }
+.dv { padding: 0 22px 22px; font-size: 15px; line-height: 1.55 }
+.dvh { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; position: sticky; top: 0; z-index: 1; background: var(--paper); padding: 18px 0 10px; border-bottom: 1px solid var(--rule); margin-bottom: 6px }
+.dv h4 { margin: 16px 0 6px; font-size: 15px }
+.dv p { margin: 0 0 8px; padding: 4px 8px; border-radius: 4px }
+.dv p.hit { box-shadow: inset 3px 0 0 var(--gold) }
+.dv mark { background: var(--gold-tint); color: var(--ink); font-weight: 600; padding: 1px 2px; border-radius: 2px; box-shadow: 0 0 0 1px var(--gold) }
+
 .elapsed { font-size: 14px; color: var(--soft); margin: 4px 0 0 44px }
 
 /* Answer */
@@ -231,7 +244,7 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
   const KEY = "gcc.demo.results";
   const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
   const keep = () => { try { localStorage.setItem(KEY, JSON.stringify(S.results)); } catch {} };
-  const S = { sample: undefined, tools: false, run: null, results: load(), cur: null, error: null, drag: null };
+  const S = { compact: true, sample: undefined, tools: false, run: null, results: load(), cur: null, error: null, drag: null };
   const curInv = () => QUEUE.find(i => i.id === S.cur) || null;
 
   (async () => {
@@ -257,10 +270,34 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
     </div>`;
   }
   const srcClass = s => /eCFR/.test(s) ? "official" : /fake/.test(s) ? "fakedoc" : "";
+  const qblock = (q, found) => { const loc = locateQuote(q, DOCS); return `<blockquote class="tq">"${esc(q.quote)}"<span class="${found ? "found" : "notfound"}">${found ? "Exact match in the source" : "Not found in the source. Read the rule yourself"}</span><span class="qlinks">${loc ? `<button type="button" class="qlink" data-doc="${esc(q.doc)}" data-quote="${esc(q.quote)}">See it in the document</button>` : ""}${loc && loc.url ? `<a class="qlink" href="${esc(loc.url)}" target="_blank" rel="noopener">Open ${esc(q.section || "the section")} on eCFR</a>` : ""}</span></blockquote>`; };
+  // Short view for presenting: setup steps fold into one Background row; only story steps keep their text
+  const STORY_DOCS = ["38CFR62", "24CFR578", "CHF", "RIDGE"];
+  const isBackground = e => ["paperwork", "count", "person"].includes(e.kind) || e.kind === "write" || (e.kind === "doc" && !STORY_DOCS.some(d => (e.source || "") === (DOC_SOURCE[d] || "#")));
+  const BG_WORD = { paperwork: e => /problem/.test(e.title) ? e.title : "Paperwork complete", count: () => "Limits counted", person: () => "Veteran record pulled", doc: e => e.title.replace(/^Reading/, "Read"), write: () => "" };
+  function compactTrace(t) {
+    const out = []; let bg = null;
+    const pivotQuotes = t.filter(e => e.kind === "pivot" && e.data && e.data.quote).map(e => norm(e.data.quote));
+    for (const e of t) {
+      if (isBackground(e)) {
+        if (e.id === "write") { out.push({ ...e, why: "", detail: "" }); continue; }
+        if (!bg) { bg = { id: "bg", kind: "paperwork", title: "Background checks", items: [], state: "done", fresh: false }; out.push(bg); }
+        bg.items.push(e);
+        if (e.fresh) bg.fresh = true;
+        if (e.state === "running") bg.state = "running";
+        continue;
+      }
+      if (e.kind === "final" && e.quote && pivotQuotes.includes(norm(e.quote))) continue;   // already shown on the pivot
+      out.push({ ...e, why: e.kind === "history" ? e.why : "", detail: e.kind === "doc" ? "" : e.detail, short: true });
+    }
+    if (bg) { bg.detail = bg.items.filter(e => e.state !== "running").map(e => (BG_WORD[e.kind] || (x => x.title))(e)).filter(Boolean).join(" · "); bg.bad = bg.items.some(e => / problem/.test(e.title)); }
+    return out;
+  }
+  const traceHTML = t => (S.compact ? compactTrace(t) : t).map(step).join("");
   const CAT = { paperwork: "check", count: "check", person: "vet", history: "vet", doc: "rule", final: "rule", write: "claude", pivot: "pivot" };
   const CAT_LABEL = { check: "Page check", vet: "Veteran record", rule: "Rules", claude: "Claude", pivot: "Change of path" };
   const finding = e => e.state !== "done" ? "" : /^(Paperwork problem|SSVF .* limit reached|Over a limit)/.test(e.title) ? " find-bad" : /^(Paperwork complete|Within the SSVF|All limits OK)/.test(e.title) ? " find-ok" : "";
-  const step = e => { const c = CAT[e.kind] || "claude"; return `<li class="cat-${c} st-${e.state || "done"}${e.kind === "final" && e.state !== "error" ? " st-final" : ""}${e.kind === "pivot" && e.data && e.data.next_fund === "none" ? " dead" : ""}${finding(e)}${e.fresh ? " enter" : ""}"><span class="ic">${e.state === "error" ? ICON.bad : ICON[e.kind] || ICON.final}</span><div class="sb"><span class="cat">${CAT_LABEL[c]}</span><div class="t">${esc(e.title)}${e.source ? e.source.split(" · ").map(x => `<span class="src ${srcClass(x)}">${esc(x)}</span>`).join("") : ""}</div>${e.why ? `<div class="why"><b>Why:</b> ${esc(e.why)}</div>` : ""}${e.kind === "history" && e.data && e.data.found ? histStrip(e.data, e.grow) : e.detail ? `<div class="d">${e.kind === "pivot" ? "<b>Because:</b> " : ""}${esc(e.detail)}</div>` : ""}${e.quote ? `<blockquote class="tq">"${esc(e.quote)}"<span class="${e.found ? "found" : "notfound"}">${e.found ? "Matches the source text word for word" : "Not found in the source. Read the rule yourself"}</span></blockquote>` : ""}</div></li>`; };
+  const step = e => { const c = CAT[e.kind] || "claude"; return `<li class="cat-${c} st-${e.state || "done"}${e.kind === "final" && e.state !== "error" ? " st-final" : ""}${e.kind === "pivot" && e.data && e.data.next_fund === "none" ? " dead" : ""}${finding(e)}${e.fresh ? " enter" : ""}"><span class="ic">${e.state === "error" ? ICON.bad : ICON[e.kind] || ICON.final}</span><div class="sb"><span class="cat">${CAT_LABEL[c]}</span><div class="t">${esc(e.title)}${e.source ? e.source.split(" · ").map(x => `<span class="src ${srcClass(x)}">${esc(x)}</span>`).join("") : ""}</div>${e.why ? `<div class="why"><b>Why:</b> ${esc(e.why)}</div>` : ""}${e.kind === "history" && e.data && e.data.found ? histStrip(e.data, e.grow) : e.detail ? `<div class="d">${e.kind === "pivot" ? "<b>Because:</b> " : ""}${esc(e.detail)}</div>` : ""}${e.quote ? qblock({ doc: e.doc, section: e.detail, quote: e.quote }, e.found) : ""}${e.kind === "pivot" && e.data && e.data.skipped ? `<div class="d"><b>Skipped:</b> ${esc(e.data.skipped)}</div>` : ""}${e.kind === "pivot" && e.data && e.data.quote ? qblock(e.data, e.data.quote_found_in_source) : ""}</div></li>`; };
 
   // One step at a time: a step appears, waits for its own result, shows the result (text, chart or quote),
   // and stays alone on screen for a reading pause before the next step appears.
@@ -273,7 +310,7 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
     const t = S.run.trace, i = t.findIndex(e => e.id === ev.id);
     const grows = !!ev.data && !(i >= 0 && t[i].data);
     if (i >= 0) t[i] = { ...t[i], ...ev, grow: grows }; else t.push({ ...ev, fresh: true, grow: grows });
-    const el = $("#trace"); if (el) { el.innerHTML = t.map(step).join(""); t.forEach(e => { e.fresh = false; e.grow = false; }); }
+    const el = $("#trace"); if (el) { el.innerHTML = traceHTML(t); t.forEach(e => { e.fresh = false; e.grow = false; }); }
     return i < 0;
   }
   // Wait until this step's result is in the queue (or the run has ended), then take it out of the queue.
@@ -293,12 +330,13 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
         const ev = queue.shift();
         if (!show(ev)) continue;                       // update to a step already on screen: no pause
         let shown = S.run && S.run.trace.find(e => e.id === ev.id);
+        const quick = S.compact && isBackground(ev);
         if (ev.state === "running") {
-          await sleep(RESULT_DELAY);
+          await sleep(quick ? 150 : RESULT_DELAY);
           const res = await resultFor(ev.id);
           if (res) { show(res); shown = S.run && S.run.trace.find(e => e.id === ev.id); }
         }
-        await sleep(shown ? dwell(shown) : PACE);
+        await sleep(quick ? 450 : shown ? dwell(shown) : PACE);
       }
     } finally { pumping = null; }
   }
@@ -330,7 +368,7 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
       const quotes = [r.deciding, ...(r.supporting || []).slice(0, 2)].filter(q => q && q.quote);
       quotes.forEach((q, n) => {
         const found = verifyQuote(q, DOCS);
-        log({ id: "quote" + n, kind: "final", title: n === 0 ? "The rule that decides it" : "A supporting rule", source: DOC_SOURCE[q.doc] || "", detail: q.section || "", quote: q.quote, found, state: found ? "done" : "error" });
+        log({ id: "quote" + n, kind: "final", title: n === 0 ? "The rule that decides it" : "A supporting rule", source: DOC_SOURCE[q.doc] || "", doc: q.doc, detail: q.section || "", quote: q.quote, found, state: found ? "done" : "error" });
       });
       const ok = quotes.length ? verifyQuote(r.deciding, DOCS) : false;
       r.verified = ok; S.run.ended = true; await drain(); r.trace = S.run.trace.map(({ fresh, ...e }) => e); r.seconds = Math.round((Date.now() - S.run.t0) / 1000);
@@ -388,6 +426,7 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
     tool.addEventListener("dragleave", e => { if (!tool.contains(e.relatedTarget)) tool.classList.remove("over"); });
     tool.addEventListener("drop", e => { e.preventDefault(); tool.classList.remove("over"); let id = S.drag; try { id = e.dataTransfer.getData("text/plain") || id; } catch {} if (id && QUEUE.some(i => i.id === id)) open(id); });
     const b = $("#go"); if (b) b.addEventListener("click", check);
+    const tm = $("#tmode"); if (tm) tm.addEventListener("click", () => { S.compact = !S.compact; render(); });
     const x = $("#reset"); if (x) x.addEventListener("click", () => { S.results = {}; S.cur = null; S.error = null; try { localStorage.removeItem(KEY); } catch {} render(); window.scrollTo(0, 0); });
   }
 
@@ -415,7 +454,7 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
 
     const live = S.run && S.run.id === INV.id;
     const trace = live ? S.run.trace : r && r.trace;
-    if (live || (trace && trace.length)) html += `<section class="card"><h2>What the check looked at</h2><div class="tlegend">${["rule","vet","check","claude","pivot"].map(c => `<span><i style="background:var(--c-${c})"></i>${CAT_LABEL[c]}</span>`).join("")}</div><ol class="trace" id="trace" aria-live="polite">${trace.map(step).join("")}</ol>${live ? '<p class="elapsed" id="elapsed">0 seconds</p>' : r && r.seconds ? `<p class="elapsed">Took ${r.seconds} seconds</p>` : ""}</section>`;
+    if (live || (trace && trace.length)) html += `<section class="card"><div class="trace-head"><h2>What the check looked at</h2><button type="button" class="btn quiet" id="tmode">${S.compact ? "Show every step" : "Show the short version"}</button></div><div class="tlegend">${["rule","vet","check","claude","pivot"].map(c => `<span><i style="background:var(--c-${c})"></i>${CAT_LABEL[c]}</span>`).join("")}</div><ol class="trace" id="trace" aria-live="polite">${traceHTML(trace)}</ol>${live ? '<p class="elapsed" id="elapsed">0 seconds</p>' : r && r.seconds ? `<p class="elapsed">Took ${r.seconds} seconds</p>` : ""}</section>`;
 
     if (S.error) html += `<section class="card"><p class="err">${esc(S.error)}${r ? " The last answer is still below." : ""}</p></section>`;
 
@@ -433,6 +472,19 @@ footer { max-width: 1240px; margin: 0 auto; padding-block: 0 28px; font-size: 13
 
     return html;
   }
+  const markQuote = (p, q) => { const k = p.toLowerCase().indexOf(String(q || "").toLowerCase().replace(/^["“]|["”]$/g, "").trim()); const n = String(q || "").replace(/^["“]|["”]$/g, "").trim().length; return k < 0 || !n ? esc(p) : esc(p.slice(0, k)) + "<mark>" + esc(p.slice(k, k + n)) + "</mark>" + esc(p.slice(k + n)); };
+  // Document viewer: the full document with the quoted paragraph highlighted
+  function showDoc(docId, quote) {
+    const doc = DOCS[docId]; if (!doc) return;
+    const loc = locateQuote({ doc: docId, quote }, DOCS);
+    let dlg = $("#docview");
+    if (!dlg) { dlg = document.createElement("dialog"); dlg.id = "docview"; document.body.appendChild(dlg); dlg.addEventListener("click", ev => { if (ev.target === dlg || ev.target.closest("[data-close]")) dlg.close(); }); }
+    dlg.innerHTML = `<div class="dv"><div class="dvh"><div><b>${esc(doc.title)}</b><div class="hint">${esc(DOC_SOURCE[docId] || "")}${doc.src ? ` · <a href="${esc(doc.src)}" target="_blank" rel="noopener">Source on eCFR</a>` : ""}</div></div><button type="button" class="btn quiet" data-close>Close</button></div>
+      ${doc.sections.map((sec, si) => `<h4>${esc(sec.head)}</h4>${sec.paras.map((p, pi) => loc && loc.section === si && loc.para === pi ? `<p class="hit">${markQuote(p, quote)}</p>` : `<p>${esc(p)}</p>`).join("")}`).join("")}</div>`;
+    dlg.showModal();
+    const hit = dlg.querySelector(".hit"); if (hit) hit.scrollIntoView({ block: "center" });
+  }
+  document.addEventListener("click", ev => { const b = ev.target.closest && ev.target.closest("button.qlink"); if (b) showDoc(b.dataset.doc, b.dataset.quote); });
   render();
 })();
 </script>

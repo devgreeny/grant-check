@@ -48,7 +48,7 @@ const REG_DOCS = {
 function allDocs(REGS) {
   const out = {};
   for (const [id, d] of Object.entries(REG_DOCS)) {
-    out[id] = { ...d, sections: d.secs.filter(s => REGS[s]).map(s => ({ head: REGS[s].head, paras: REGS[s].paras })) };
+    out[id] = { ...d, sections: d.secs.filter(s => REGS[s]).map(s => ({ key: s, head: REGS[s].head, paras: REGS[s].paras })) };
   }
   for (const [id, d] of Object.entries(FAKE_DOCS)) out[id] = d;
   return out;
@@ -279,6 +279,23 @@ function verifyQuote(q, DOCS) {
   return parts.length > 0 && parts.every(p => hay.includes(p));
 }
 
+const ECFR_TITLE = { "2CFR200": 2, "38CFR62": 38, "24CFR578": 24 };
+function locateQuote(q, DOCS) {
+  const doc = q && DOCS[q.doc];
+  if (!doc || !q.quote) return null;
+  const parts = String(q.quote).split(/\.\.\.|…/).map(norm).filter(p => p.length > 3);
+  for (let si = 0; si < doc.sections.length; si++) {
+    const sec = doc.sections[si];
+    const pi = sec.paras.findIndex(p => parts.some(x => norm(p).includes(x)));
+    if (pi >= 0 || parts.every(x => norm(sec.head + " " + sec.paras.join(" ")).includes(x))) {
+      const m = sec.key ? String(q.section || "").replace(/\s/g, "").match(new RegExp(sec.key.replace(".", "\\.") + "((\\([a-z0-9]+\\))+)", "i")) : null;
+      const url = sec.key && ECFR_TITLE[q.doc] ? `https://www.ecfr.gov/current/title-${ECFR_TITLE[q.doc]}/section-${sec.key}${m ? "#p-" + sec.key + m[1] : ""}` : null;
+      return { doc: q.doc, section: si, para: pi, url };
+    }
+  }
+  return null;
+}
+
 function scoreResult(inv, r) {
   const e = inv.expected;
   const status = e.status.includes(r.status);
@@ -394,13 +411,15 @@ function makeTools(inv, DOCS, log) {
         read.add(id);
         return { doc_id: id, title: DOCS[id].title, kind: DOCS[id].fake ? "organization or funder document" : "official federal text", text: docText(DOCS[id]) };
       }, out => `Got the full text: ${out.title}.`, i => DOC_SOURCE[String(i.doc_id)] || "") },
-    { name: "rule_out_fund", description: "Records that the fund you were checking cannot pay this cost, why, and which fund you will try next. Call it every time a fund turns out unable to pay, before you check the next one. Use next_fund \"none\" when no fund at this site is left to try. Returns the next fund's documents.",
-      inputSchema: { type: "object", properties: { fund: { type: "string", enum: siteFunds }, because: { type: "string", description: "Plain words, under 20 words: what you found that rules this fund out." }, next_fund: { type: "string", enum: [...siteFunds, "none"] } }, required: ["fund", "because", "next_fund"] },
+    { name: "rule_out_fund", description: "Records that the fund you were checking cannot pay this cost, the exact rule words that rule it out, and which fund you will try next. Read the document before you quote it. Call it every time a fund turns out unable to pay, before you check the next one. Use next_fund \"none\" when no fund at this site is left to try. Returns the next fund's documents.",
+      inputSchema: { type: "object", properties: { fund: { type: "string", enum: siteFunds }, because: { type: "string", description: "Plain words, under 20 words: what you found that rules this fund out." }, doc: { type: "string", enum: allowedDocs, description: "The document whose words rule this fund out" }, section: { type: "string", description: "The section, for example 38 CFR 62.34(a)(1) or Ridgeline letter R3" }, quote: { type: "string", description: "The exact words from read_document that rule this fund out, 8 to 40 words, copied word for word, no ellipses" }, next_fund: { type: "string", enum: [...siteFunds, "none"] }, skipped: { type: "string", description: "Funds you are passing over because their budget lines cannot cover this cost, plain words, under 15 words, for example \"HUD CoC: no rent line in its budget\". Leave empty if none." } }, required: ["fund", "because", "doc", "section", "quote", "next_fund"] },
       execute: wrap("pivot", i => `Ruling out ${fundShort(i.fund)}`, i => {
         if (!siteFunds.includes(String(i.fund))) throw new Error(`Not a fund at this site. Use one of: ${siteFunds.join(", ")}`);
         const next = siteFunds.includes(String(i.next_fund)) ? String(i.next_fund) : "none";
-        return { ruled_out: String(i.fund), next_fund: next, next_fund_documents: next === "none" ? [] : FUNDS[next].docs };
-      }, (out, i) => String(i.because || "").slice(0, 200), () => "",
+        const q = { doc: String(i.doc || ""), section: String(i.section || ""), quote: String(i.quote || "") };
+        const found = verifyQuote(q, DOCS);
+        return { ruled_out: String(i.fund), next_fund: next, next_fund_documents: next === "none" ? [] : FUNDS[next].docs, quote_found_in_source: found, skipped: String(i.skipped || "").slice(0, 160), ...q };
+      }, (out, i) => String(i.because || "").slice(0, 200), i => String(i.section || "").slice(0, 40),
         (out) => out.next_fund === "none" ? `${fundShort(out.ruled_out)} can't pay. No fund left to try` : `${fundShort(out.ruled_out)} can't pay. Pivoting to ${fundShort(out.next_fund)}`) }
   ];
 }
@@ -417,7 +436,8 @@ Work with the tools. Call several at once when you can, and finish in at most fi
 Work one fund at a time, in the order policy FIN-07 sets, so the analyst can follow your path:
 - Round 1: call check_paperwork, read_document for FIN-07, and read_document for the documents of the first fund to try (the fund the analyst entered, or the first one FIN-07 says to charge).
 - Check that fund. Only if a rule you read limits months of help (for example 6 months in any 12-month period), call veteran_history with rule_section naming that rule, together with look_up_participant. Call check_limits for dollar caps.
-- If that fund cannot pay, call rule_out_fund and, in the same round, read_document for the next fund's documents. Check that fund the same way. If no fund is left, call rule_out_fund with next_fund "none".
+- Before you read a fund's documents, look at its approved budget lines under FUNDS AT THIS SITE. If none of its lines can cover this kind of cost, skip it: do not read its documents, and name it in skipped on your next rule_out_fund call.
+- If that fund cannot pay, call rule_out_fund with the exact words that rule it out and, in the same round, read_document for the next fund's documents. Check that fund the same way. If no fund is left, call rule_out_fund with next_fund "none".
 - Quote only words returned by read_document.
 - Fill in reason on every tool call: why you are calling it now, tied to the invoice or to what an earlier tool returned (for example "SSVF months are used up, so check the county fund rules").
 
@@ -612,7 +632,7 @@ function generatePractice(seed, n) {
 
 
 // ---------- Eval framework ----------
-const PROMPT_VERSION = "v7 (demo: one fund at a time, rule_out_fund pivots)";
+const PROMPT_VERSION = "v9 (demo: skip funds by budget line, short trace)";
 
 // Code checks: graded by code, never by Claude. critical = a miss sinks the whole case.
 const CODE_CHECKS = [
@@ -669,4 +689,4 @@ const DIAG_BUCKETS = [
   ["model", "All of the above were fine; the model got it wrong"]
 ];
 
-if (typeof module !== "undefined") module.exports = { veteranHistory, DOC_SOURCE, codeChecks, buildJudgePrompt, CODE_CHECKS, JUDGE_CHECKS, generatePractice, PRACTICE_TEMPLATES, makeTools, buildToolPrompt, oneShotSteps, INVOICES, computeChecks, buildPrompt, allDocs, verifyQuote, scoreResult, windowCount };
+if (typeof module !== "undefined") module.exports = { locateQuote, veteranHistory, DOC_SOURCE, codeChecks, buildJudgePrompt, CODE_CHECKS, JUDGE_CHECKS, generatePractice, PRACTICE_TEMPLATES, makeTools, buildToolPrompt, oneShotSteps, INVOICES, computeChecks, buildPrompt, allDocs, verifyQuote, scoreResult, windowCount };
